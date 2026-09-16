@@ -19,7 +19,7 @@ function createButton(scene, x, y, label, onClick, opts = {}) {
     .setScrollFactor(0);
 
   const txt = scene.add.text(x, y, label, {
-    fontFamily: 'Georgia, serif',
+    fontFamily: '"Tildunk", Georgia, serif',
     fontSize,
     color: '#fff8e7'
   }).setOrigin(0.5).setScrollFactor(0);
@@ -30,6 +30,80 @@ function createButton(scene, x, y, label, onClick, opts = {}) {
   rect.on('pointerup', () => { rect.setScale(1); txt.setScale(1); SoundManager.play(scene, 'click'); onClick(); });
 
   return { rect, txt };
+}
+
+/**
+ * Wooden-Gold UI icon pack - image-based button for the Main Menu.
+ * Stretches the 'wood-btn-long' plank texture to (width, height) and lays
+ * the label on top, with a slight scale-up on hover and scale-down on press
+ * (image buttons don't have a flat fill color to swap like createButton's
+ * rectangles, so the "feedback" is motion instead of color).
+ * Returns { image, txt } so the caller can reposition/restyle later.
+ */
+function createWoodButton(scene, x, y, label, onClick, opts = {}) {
+  const w = opts.width ?? 260;
+  const h = opts.height ?? 84;
+  const fontSize = opts.fontSize ?? 28;
+  const textureKey = opts.textureKey ?? 'wood-btn-long';
+
+  const image = scene.add.image(x, y, textureKey)
+    .setDisplaySize(w, h)
+    .setInteractive({ useHandCursor: true })
+    .setScrollFactor(0);
+
+  const txt = scene.add.text(x, y - 2, label, {
+    fontFamily: '"Tildunk", Georgia, serif',
+    fontSize,
+    color: '#4a2a12',
+    fontStyle: 'bold'
+  }).setOrigin(0.5).setScrollFactor(0);
+
+  const baseScale = { x: image.scaleX, y: image.scaleY };
+  const setScaleMul = (m) => {
+    image.setScale(baseScale.x * m, baseScale.y * m);
+    txt.setScale(m);
+  };
+
+  image.on('pointerover', () => setScaleMul(1.045));
+  image.on('pointerout', () => setScaleMul(1));
+  image.on('pointerdown', () => setScaleMul(0.94));
+  image.on('pointerup', () => { setScaleMul(1.045); SoundManager.play(scene, 'click'); onClick(); });
+
+  return { image, txt };
+}
+
+/**
+ * Wooden-Gold UI icon pack - small round icon-only button (Settings, About,
+ * Sound toggle, ...) for the Main Menu. `textureKey` is one of the
+ * 'wood-icon-*' keys loaded in PreloadScene. Optional `caption` prints a
+ * short label underneath, since icon-only buttons can be ambiguous on their
+ * own. Same hover/press motion feedback as createWoodButton.
+ * Returns { image, caption? } - caption is only present if opts.caption was given.
+ */
+function createIconButton(scene, x, y, textureKey, onClick, opts = {}) {
+  const size = opts.size ?? 64;
+
+  const image = scene.add.image(x, y, textureKey)
+    .setDisplaySize(size, size)
+    .setInteractive({ useHandCursor: true })
+    .setScrollFactor(0);
+
+  const baseScale = { x: image.scaleX, y: image.scaleY };
+  const setScaleMul = (m) => image.setScale(baseScale.x * m, baseScale.y * m);
+
+  image.on('pointerover', () => setScaleMul(1.08));
+  image.on('pointerout', () => setScaleMul(1));
+  image.on('pointerdown', () => setScaleMul(0.92));
+  image.on('pointerup', () => { setScaleMul(1.08); SoundManager.play(scene, 'click'); onClick(); });
+
+  let captionTxt = null;
+  if (opts.caption) {
+    captionTxt = scene.add.text(x, y + size / 2 + 14, opts.caption, {
+      fontFamily: '"Tildunk", sans-serif', fontSize: 12, color: '#f5e2c8'
+    }).setOrigin(0.5).setScrollFactor(0).setShadow(1, 1, '#00000088', 2, true, true);
+  }
+
+  return { image, caption: captionTxt };
 }
 
 /**
@@ -84,14 +158,14 @@ function showDialogue(scene, speaker, lines, onComplete, portraits) {
   const nameTag = scene.add.rectangle(90, panelTop, 140, 32, 0x9c3b2e, 0.96)
     .setStrokeStyle(2, 0xf5e2c8);
   const nameTxt = scene.add.text(90, panelTop, speaker, {
-    fontFamily: 'Georgia, serif', fontSize: 16, color: '#fff8e7'
+    fontFamily: '"Tildunk", Georgia, serif', fontSize: 16, color: '#fff8e7'
   }).setOrigin(0.5);
   const bodyTxt = scene.add.text(40 + 20, panelTop + 18, '', {
-    fontFamily: 'sans-serif', fontSize: 17, color: '#f5e2c8',
+    fontFamily: '"Tildunk", sans-serif', fontSize: 17, color: '#f5e2c8',
     wordWrap: { width: width - 100 }
   }).setOrigin(0, 0);
   const hint = scene.add.text(width - 60, panelY + panelH / 2 - 14, '▶ space / click', {
-    fontFamily: 'sans-serif', fontSize: 12, color: '#9aa0aa'
+    fontFamily: '"Tildunk", sans-serif', fontSize: 12, color: '#9aa0aa'
   }).setOrigin(1, 1);
 
   container.add([panel, nameTag, nameTxt, bodyTxt, hint]);
@@ -224,7 +298,7 @@ function makeSettingsOptionRow(scene, options, centerX, y, regKey, onSelect) {
       .setInteractive({ useHandCursor: true })
       .setScrollFactor(0);
     const txt = scene.add.text(x, y, String(label), {
-      fontFamily: 'sans-serif', fontSize: 17, color: '#fff8e7'
+      fontFamily: '"Tildunk", sans-serif', fontSize: 17, color: '#fff8e7'
     }).setOrigin(0.5).setScrollFactor(0);
     objects.push(rect, txt);
 
@@ -260,11 +334,11 @@ function showSettingsModal(scene) {
     .setInteractive()
     .setScrollFactor(0);
   const title = scene.add.text(width / 2, 40, 'SETTINGS', {
-    fontFamily: 'Georgia, serif', fontSize: 34, color: '#fff8e7'
+    fontFamily: '"Tildunk", Georgia, serif', fontSize: 34, color: '#fff8e7'
   }).setOrigin(0.5);
   container.add([bg, title]);
 
-  const labelStyle = { fontFamily: 'sans-serif', fontSize: 16, color: '#c9cdd6' };
+  const labelStyle = { fontFamily: '"Tildunk", sans-serif', fontSize: 16, color: '#c9cdd6' };
   const addLabel = (y, text) => container.add(
     scene.add.text(width / 2, y, text, labelStyle).setOrigin(0.5).setScrollFactor(0)
   );
@@ -313,7 +387,7 @@ function showPauseMenu(scene) {
   const top = height / 2 - panelH / 2;
 
   const title = scene.add.text(width / 2, top + 34, 'Paused', {
-    fontFamily: 'Georgia, serif', fontSize: 24, color: '#9c3b2e', fontStyle: 'bold'
+    fontFamily: '"Tildunk", Georgia, serif', fontSize: 24, color: '#9c3b2e', fontStyle: 'bold'
   }).setOrigin(0.5);
 
   container.add([overlay, panel, title]);
@@ -357,7 +431,16 @@ function makeCurtainSide(scene, panelW, height, startX, trimOnRight) {
    return container;
 }
 
-/** Slides two curtain panels together to fully cover the screen, then calls onComplete. */
+/**
+ * Slides two curtain panels together to fully cover the screen, then calls
+ * onComplete. Destroys its own panels right after onComplete runs - every
+ * existing caller immediately does scene.start(...) inside onComplete
+ * anyway (which would tear these down as a side effect of killing the
+ * whole scene), but a caller that stays on the SAME scene and pairs this
+ * with curtainOpen() right after (rather than switching scenes) needs
+ * these gone explicitly, or curtainOpen's own panels finish sliding away
+ * to reveal... this original pair still sitting there, stuck fully closed.
+ */
 function curtainClose(scene, onComplete) {
   const { width, height } = scene.scale;
   const panelW = width / 2 + 6;
@@ -368,7 +451,11 @@ function curtainClose(scene, onComplete) {
   scene.tweens.add({ targets: left, x: width / 4, duration: 550, ease: 'Cubic.easeIn' });
   scene.tweens.add({
     targets: right, x: width * 3 / 4, duration: 550, ease: 'Cubic.easeIn',
-    onComplete: () => onComplete && onComplete()
+    onComplete: () => {
+      onComplete && onComplete();
+      left.destroy();
+      right.destroy();
+    }
   });
 }
 
@@ -415,10 +502,10 @@ function showInfoPopup(scene, title, body, onClose) {
   const panel = scene.add.rectangle(width / 2, height / 2, 460, 200, 0xfff8e7, 1)
     .setStrokeStyle(4, 0x9c3b2e);
   const titleTxt = scene.add.text(width / 2, height / 2 - 62, title, {
-    fontFamily: 'Georgia, serif', fontSize: 20, color: '#9c3b2e', fontStyle: 'bold'
+    fontFamily: '"Tildunk", Georgia, serif', fontSize: 20, color: '#9c3b2e', fontStyle: 'bold'
   }).setOrigin(0.5);
   const bodyTxt = scene.add.text(width / 2, height / 2 - 20, body, {
-    fontFamily: 'sans-serif', fontSize: 16, color: '#3b2410', align: 'center',
+    fontFamily: '"Tildunk", sans-serif', fontSize: 16, color: '#3b2410', align: 'center',
     wordWrap: { width: 400 }
   }).setOrigin(0.5, 0);
 

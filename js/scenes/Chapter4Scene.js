@@ -109,10 +109,18 @@ const CHAPTER4_DUCK_WANDER_MAX_MS = 1900;
 // or "right" for facing purposes - keeps a duck that's moving mostly up/down
 // from flickering its flip back and forth on tiny left/right jitter.
 const CHAPTER4_DUCK_FLIP_THRESHOLD = 5;
-// duck.png is drawn facing right by default - flip it to face left instead
-// of using a separate left-facing asset. If your art is drawn facing left
-// by default, just flip this to true.
+// duck-walk.png / duck-flap.png are drawn facing right by default - flip
+// them to face left instead of using separate left-facing assets. If your
+// art is drawn facing left by default, just flip this to true.
 const CHAPTER4_DUCK_ART_FACES_LEFT_BY_DEFAULT = false;
+// Sheets are exported bigger than the duck's intended on-screen footprint
+// (see PreloadScene-style sizing notes) so the walk-cycle detail doesn't
+// get muddy - scale everything down uniformly instead.
+const CHAPTER4_DUCK_SCALE = 0.65;
+// Below this speed a duck is considered "not really walking" - keeps the
+// walk-cycle from playing while a duck is momentarily stopped between
+// wander bursts (it just holds on the frame it was already showing).
+const CHAPTER4_DUCK_MOVE_THRESHOLD = 4;
 
 // --- Egg Sorting mini-game data ----------------------------------------
 // Facts drawn straight from the story doc's Chapter 4 section.
@@ -153,17 +161,21 @@ class Chapter4Scene extends Phaser.Scene {
   }
 
   preload() {
-    // Duck-herding sprite - pre-sized to its intended on-screen footprint
-    // (36x44) rather than loaded native-size + setDisplaySize(), since
-    // startDuckHerding() below reads sprite.width/height directly to
-    // center the arcade physics circle body, the same way it did against
-    // the old emoji-text sprite (which also rendered at 1:1 scale).
-    this.load.image('icon_duck', 'assets/icons/duck.png');
+    // Duck-herding sprites - two small animation sheets rather than one
+    // static icon: a 7-frame walk cycle for wandering ducks, and a
+    // 4-frame wing-flap loop for ducks that have settled in the pen.
+    // Both drawn facing right by default (see CHAPTER4_DUCK_ART_FACES_LEFT_BY_DEFAULT
+    // above) and flipped for leftward movement, same approach the old
+    // static icon used. startDuckHerding() reads sprite.width/height
+    // (the native, unscaled frame size) to center the arcade physics
+    // circle body, same as it did against the old single-image sprite.
+    this.load.spritesheet('duck_walk', 'assets/icons/duck-walk.png', { frameWidth: 64, frameHeight: 72 });
+    this.load.spritesheet('duck_flap', 'assets/icons/duck-flap.png', { frameWidth: 72, frameHeight: 80 });
     // Egg-sorting icon shown in the sort-this-egg popup.
     this.load.image('icon_egg', 'assets/icons/ch4-egg-plain.png');
   }
 
-  create() {
+  create(data) {
     SoundManager.playMusic(this, 'bg-game');
     const { width, height } = this.scale;
     const character = this.registry.get('selectedCharacter') || 'hiraya';
@@ -173,6 +185,28 @@ class Chapter4Scene extends Phaser.Scene {
     this.locked = false; // true during dialogue / modal minigame screens - movement disabled
     // mode: intro -> herding -> eggsorting -> balutstall -> quiz -> done
     this.mode = 'intro';
+
+    // Duck animations - defined once against the cache keys rather than
+    // per-scene-instance, so re-entering Chapter 4 (or Phaser recreating
+    // the scene) doesn't throw on a duplicate anim key.
+    if (this.textures.exists('duck_walk') && !this.anims.exists('duck-walk')) {
+      this.anims.create({
+        key: 'duck-walk',
+        frames: this.anims.generateFrameNumbers('duck_walk', { start: 0, end: 6 }),
+        frameRate: 8,
+        repeat: -1
+      });
+    }
+    if (this.textures.exists('duck_flap') && !this.anims.exists('duck-idle')) {
+      this.anims.create({
+        key: 'duck-idle',
+        // rest -> wings half-up -> wings full-up -> half-up -> rest, so the
+        // flap reads as one flourish rather than a mechanical back-and-forth
+        frames: [0, 1, 2, 1].map(f => ({ key: 'duck_flap', frame: f })),
+        frameRate: 6,
+        repeat: -1
+      });
+    }
 
     // --- Duck Yard map (48x32 tiles - see CHAPTER4_MAP up top to edit) ---
     this.map = loadMap(this, CHAPTER4_MAP);
@@ -227,35 +261,38 @@ class Chapter4Scene extends Phaser.Scene {
     // of scrolling away with the map now that the camera follows the player)
     const displayName = character.charAt(0).toUpperCase() + character.slice(1);
     this.add.text(14, 12, displayName, {
-      fontFamily: 'Georgia, serif', fontSize: 18, color: '#fff8e7'
+      fontFamily: '"Tildunk", Georgia, serif', fontSize: 18, color: '#fff8e7'
     }).setShadow(1, 1, '#000000aa', 2, true, true).setScrollFactor(0).setDepth(900);
 
     this.add.text(width / 2, 16, 'Chapter 4: The Balut Capital', {
-      fontFamily: 'Georgia, serif', fontSize: 16, color: '#f5e2c8'
+      fontFamily: '"Tildunk", Georgia, serif', fontSize: 16, color: '#f5e2c8'
     }).setOrigin(0.5, 0).setShadow(1, 1, '#000000aa', 2, true, true).setScrollFactor(0).setDepth(900);
 
     // one shared progress readout, re-labeled per mini-game (see updateProgress)
     this.progressText = this.add.text(width / 2, 38, '', {
-      fontFamily: 'sans-serif', fontSize: 13, color: '#f5e2c8'
+      fontFamily: '"Tildunk", sans-serif', fontSize: 13, color: '#f5e2c8'
     }).setOrigin(0.5, 0).setShadow(1, 1, '#000000aa', 2, true, true).setScrollFactor(0).setDepth(900);
 
-    const journalBtn = createButton(this, 66, height - 30, 'Journal', () => {
+    // Wooden-Gold UI icon pack - same plank button used for Start
+    // Adventure/Chapters on the Main Menu (see createWoodButton in ui.js),
+    // sized down to fit the gameplay HUD.
+    const journalBtn = createWoodButton(this, 66, height - 30, 'Journal', () => {
       if (this.mode === 'herding' && !this.locked) {
         this.locked = true;
         this.showJournalModal();
       }
-    }, { width: 110, height: 34, fontSize: 13 });
-    journalBtn.rect.setScrollFactor(0).setDepth(900);
+    }, { width: 130, height: 40, fontSize: 14 });
+    journalBtn.image.setScrollFactor(0).setDepth(900);
     journalBtn.txt.setScrollFactor(0).setDepth(901);
 
-    const menuBtn = createButton(this, width - 66, height - 30, 'Menu', () => {
+    const menuBtn = createWoodButton(this, width - 66, height - 30, 'Menu', () => {
       if (!this.locked) { this.locked = true; showPauseMenu(this); }
-    }, { width: 110, height: 34, fontSize: 13 });
-    menuBtn.rect.setScrollFactor(0).setDepth(900);
+    }, { width: 130, height: 40, fontSize: 14 });
+    menuBtn.image.setScrollFactor(0).setDepth(900);
     menuBtn.txt.setScrollFactor(0).setDepth(901);
 
     this.add.text(width / 2, height - 12, 'WASD to move · Esc for menu', {
-      fontFamily: 'sans-serif', fontSize: 12, color: '#9aa0aa'
+      fontFamily: '"Tildunk", sans-serif', fontSize: 12, color: '#9aa0aa'
     }).setOrigin(0.5, 1).setScrollFactor(0).setDepth(900);
 
     // --- curtain-open reveal - opening dialogue waits for it to finish ---
@@ -314,7 +351,7 @@ showJournalModal() {
     const top = height / 2 - panelH / 2;
 
     const title = this.add.text(width / 2, top + 28, "Lola's Journal", {
-      fontFamily: 'Georgia, serif', fontSize: 20, color: '#9c3b2e', fontStyle: 'bold'
+      fontFamily: '"Tildunk", Georgia, serif', fontSize: 20, color: '#9c3b2e', fontStyle: 'bold'
     }).setOrigin(0.5);
 
     container.add([overlay, panel, title]);
@@ -323,16 +360,16 @@ showJournalModal() {
       const unlocked = pages.includes(ch.id);
       const y = top + 62 + i * rowH;
       const mark = this.add.text(width / 2 - 198, y, unlocked ? '✓' : '🔒', {
-        fontFamily: 'sans-serif', fontSize: 15,
+        fontFamily: '"Tildunk", sans-serif', fontSize: 15,
         color: unlocked ? '#3c7a3e' : '#9aa0aa'
       }).setOrigin(0, 0.5);
       const label = this.add.text(width / 2 - 172, y, `Page ${ch.id}: ${ch.title}`, {
-        fontFamily: 'sans-serif', fontSize: 13,
+        fontFamily: '"Tildunk", sans-serif', fontSize: 13,
         color: unlocked ? '#3b2410' : '#9aa0aa',
         wordWrap: { width: 300 }
       }).setOrigin(0, 0.5);
       const status = this.add.text(width / 2 + 198, y, unlocked ? 'Unlocked' : 'Locked', {
-        fontFamily: 'sans-serif', fontSize: 11,
+        fontFamily: '"Tildunk", sans-serif', fontSize: 11,
         color: unlocked ? '#3c7a3e' : '#9aa0aa'
       }).setOrigin(1, 0.5);
       container.add([mark, label, status]);
@@ -362,16 +399,16 @@ showJournalModal() {
     this.add.rectangle(penCenterX, penCenterY, CHAPTER4_PEN_RECT.width, CHAPTER4_PEN_RECT.height, 0xd8b04a, 0.15)
       .setStrokeStyle(3, 0x6b4f30);
     this.add.text(penCenterX, CHAPTER4_PEN_RECT.y - 16, 'Duck Pen', {
-      fontFamily: 'sans-serif', fontSize: 13, color: '#fff8e7', backgroundColor: '#000000aa',
+      fontFamily: '"Tildunk", sans-serif', fontSize: 13, color: '#fff8e7', backgroundColor: '#000000aa',
       padding: { x: 6, y: 3 }
     }).setOrigin(0.5, 1);
 
-    // ducks - real icon sprite (assets/icons/duck.png, pre-sized to 36x44),
+    // ducks - animated walk-cycle sprite (assets/icons/duck-walk.png),
     // each with its own arcade body
-    const hasDuckIcon = this.textures.exists('icon_duck');
+    const hasDuckSheet = this.textures.exists('duck_walk');
     this.ducks = CHAPTER4_DUCK_START.map((pos, i) => {
-      const sprite = hasDuckIcon
-        ? this.add.image(pos.x, pos.y, 'icon_duck').setOrigin(0.5)
+      const sprite = hasDuckSheet
+        ? this.add.sprite(pos.x, pos.y, 'duck_walk', 0).setOrigin(0.5).setScale(CHAPTER4_DUCK_SCALE)
         : this.add.text(pos.x, pos.y, '🦆', { fontSize: 26 }).setOrigin(0.5);
       this.physics.add.existing(sprite);
       sprite.body.setCollideWorldBounds(true);
@@ -404,15 +441,29 @@ showJournalModal() {
       }
 
       // Face the direction of travel - only the emoji fallback ('🦆' as a
-      // Text object) can't be flipped, real image sprites can. A small
-      // dead zone around 0 keeps a duck moving mostly up/down from
-      // flickering its facing back and forth on tiny horizontal jitter.
+      // Text object) can't be flipped, real sprites can. A small dead zone
+      // around 0 keeps a duck moving mostly up/down from flickering its
+      // facing back and forth on tiny horizontal jitter.
       if (typeof s.setFlipX === 'function' && s.body) {
         const vx = s.body.velocity.x;
         if (vx > CHAPTER4_DUCK_FLIP_THRESHOLD) {
           s.setFlipX(CHAPTER4_DUCK_ART_FACES_LEFT_BY_DEFAULT);
         } else if (vx < -CHAPTER4_DUCK_FLIP_THRESHOLD) {
           s.setFlipX(!CHAPTER4_DUCK_ART_FACES_LEFT_BY_DEFAULT);
+        }
+      }
+
+      // Play the walk cycle while actually moving; hold still (frame 0)
+      // during the brief pauses between wander bursts. ignoreIfPlaying
+      // (the `true` 2nd arg) keeps this from restarting the anim - and
+      // re-flickering its timing - every single frame.
+      if (typeof s.play === 'function' && s.body) {
+        const moving = s.body.speed > CHAPTER4_DUCK_MOVE_THRESHOLD;
+        if (moving) {
+          s.play('duck-walk', true);
+        } else if (s.anims && s.anims.isPlaying) {
+          s.anims.stop();
+          s.setFrame(0);
         }
       }
 
@@ -434,6 +485,25 @@ showJournalModal() {
     this.physics.world.disable(s); // fully hand off from physics to a plain tween
 
     const slot = CHAPTER4_PEN_SLOTS[this.herdedCount] || CHAPTER4_PEN_SLOTS[0];
+
+    // Face the slot before walking to it - once physics is disabled above,
+    // updateDucks() (which normally handles facing) skips this duck for
+    // good (it returns early on duck.settled), so without this the sprite
+    // just keeps whatever facing it happened to have when it wandered into
+    // the pen and glides into its slot however that faces - backwards half
+    // the time, which reads as the duck moonwalking into the pen.
+    if (typeof s.setFlipX === 'function') {
+      const dx = slot.x - s.x;
+      if (dx > CHAPTER4_DUCK_FLIP_THRESHOLD) {
+        s.setFlipX(CHAPTER4_DUCK_ART_FACES_LEFT_BY_DEFAULT);
+      } else if (dx < -CHAPTER4_DUCK_FLIP_THRESHOLD) {
+        s.setFlipX(!CHAPTER4_DUCK_ART_FACES_LEFT_BY_DEFAULT);
+      }
+    }
+    if (typeof s.play === 'function') {
+      s.play('duck-walk', true);
+    }
+
     this.tweens.add({
       targets: s,
       x: slot.x,
@@ -441,6 +511,13 @@ showJournalModal() {
       duration: 380,
       ease: 'Sine.easeOut',
       onComplete: () => {
+        // Swap from the walk-cycle sheet to the wing-flap loop now that
+        // the duck has somewhere to be smug about - the settle-in-place
+        // wobble tween below still moves the sprite around, so it reads
+        // as a duck happily flapping and shuffling in place, not frozen.
+        if (typeof s.play === 'function') {
+          s.play('duck-idle', true);
+        }
         this.tweens.add({
           targets: s,
           x: slot.x + Phaser.Math.Between(-6, 6),
@@ -502,12 +579,12 @@ showJournalModal() {
 
     let cursor = panelTop + 26;
     const title = this.add.text(width / 2, cursor, 'Egg Sorting', {
-      fontFamily: 'Georgia, serif', fontSize: 19, color: '#9c3b2e', fontStyle: 'bold'
+      fontFamily: '"Tildunk", Georgia, serif', fontSize: 19, color: '#9c3b2e', fontStyle: 'bold'
     }).setOrigin(0.5);
     cursor += 26;
 
     const subtitle = this.add.text(width / 2, cursor, 'Sort each egg - ready for incubation, or not yet?', {
-      fontFamily: 'sans-serif', fontSize: 12, color: '#6b4a2f'
+      fontFamily: '"Tildunk", sans-serif', fontSize: 12, color: '#6b4a2f'
     }).setOrigin(0.5);
     cursor += 32;
 
@@ -517,7 +594,7 @@ showJournalModal() {
     cursor += eggIcon.displayHeight + 6; // was a fixed 36 tuned for the old emoji glyph
 
     const descTxt = this.add.text(width / 2, cursor, egg.desc, {
-      fontFamily: 'sans-serif', fontSize: 15, color: '#3b2410', align: 'center',
+      fontFamily: '"Tildunk", sans-serif', fontSize: 15, color: '#3b2410', align: 'center',
       wordWrap: { width: 460 }
     }).setOrigin(0.5, 0);
     cursor += descTxt.height + 26;
@@ -554,13 +631,13 @@ showJournalModal() {
     const { width } = this.scale;
     let cursor = feedbackY;
     const verdict = this.add.text(width / 2, cursor, isCorrect ? 'Correct!' : 'Not quite.', {
-      fontFamily: 'Georgia, serif', fontSize: 15, fontStyle: 'bold',
+      fontFamily: '"Tildunk", Georgia, serif', fontSize: 15, fontStyle: 'bold',
       color: isCorrect ? '#3c7a3e' : '#9c3b2e'
     }).setOrigin(0.5);
     cursor += 24;
 
     const explanationTxt = this.add.text(width / 2, cursor, egg.explanation, {
-      fontFamily: 'sans-serif', fontSize: 12, color: '#3b2410', align: 'center',
+      fontFamily: '"Tildunk", sans-serif', fontSize: 12, color: '#3b2410', align: 'center',
       wordWrap: { width: 460 }
     }).setOrigin(0.5, 0);
     cursor += explanationTxt.height + 22;
@@ -612,7 +689,7 @@ showJournalModal() {
 
     let cursor = panelTop + 30;
     const title = this.add.text(width / 2, cursor, 'Balut Stall', {
-      fontFamily: 'Georgia, serif', fontSize: 19, color: '#9c3b2e', fontStyle: 'bold'
+      fontFamily: '"Tildunk", Georgia, serif', fontSize: 19, color: '#9c3b2e', fontStyle: 'bold'
     }).setOrigin(0.5);
     cursor += 40;
 
@@ -620,7 +697,7 @@ showJournalModal() {
     cursor += 40;
 
     const lineTxt = this.add.text(width / 2, cursor, customer.line, {
-      fontFamily: 'sans-serif', fontSize: 16, color: '#3b2410', align: 'center', fontStyle: 'italic',
+      fontFamily: '"Tildunk", sans-serif', fontSize: 16, color: '#3b2410', align: 'center', fontStyle: 'italic',
       wordWrap: { width: 460 }
     }).setOrigin(0.5, 0);
     cursor += lineTxt.height + 26;
@@ -657,7 +734,7 @@ showJournalModal() {
 
     const { width } = this.scale;
     const verdict = this.add.text(width / 2, feedbackY, isCorrect ? 'The customer is happy!' : "That's not what they asked for.", {
-      fontFamily: 'Georgia, serif', fontSize: 14, fontStyle: 'bold',
+      fontFamily: '"Tildunk", Georgia, serif', fontSize: 14, fontStyle: 'bold',
       color: isCorrect ? '#3c7a3e' : '#9c3b2e'
     }).setOrigin(0.5);
     container.add(verdict);
@@ -697,13 +774,13 @@ showJournalModal() {
       },
       {
         q: 'What is Pateros historically famous for producing?',
-        options: ['Balut (fertilized duck eggs)', 'Silk textiles', 'Rice wine', 'Pottery'],
+        options: ['Balut (fertilized duck eggs)', 'Bagoong (fermented fish paste)', 'Patis (fish sauce)', 'Woven mats (banig)'],
         correct: 0,
         explanation: 'Duck raising and balut production became closely tied to Pateros\' identity over generations.'
       },
       {
         q: 'About how many ducks did historical accounts estimate Pateros had during the 1950s?',
-        options: ['Around 400,000', 'About 4,000', 'Roughly 40', 'Nearly 4 million'],
+        options: ['Around 400,000', 'About 40,000', 'Around 150,000', 'Nearly 1 million'],
         correct: 0,
         explanation: 'Historical accounts estimate Pateros had around 400,000 ducks during the 1950s, before urbanization changed the town.'
       }
@@ -718,11 +795,15 @@ showQuizQuestion() {
 
     const overlay = this.add.rectangle(width / 2, height / 2, width, height, 0x000000, 0.45).setInteractive().setScrollFactor(0);
     const panel = this.add.rectangle(width / 2, height / 2, 540, 420, 0xfff8e7, 1).setStrokeStyle(4, 0x9c3b2e);
+    // Kept so showQuizFeedback() can grow the panel downward if a long
+    // explanation wraps to more lines than the base 420px height allows for.
+    this.quizPanel = panel;
+    this.quizPanelTop = panel.y - panel.height / 2;
     const qNum = this.add.text(width / 2, height / 2 - 164, `Question ${this.quizIndex + 1} / ${this.quizQuestions.length}`, {
-      fontFamily: 'sans-serif', fontSize: 13, color: '#9c3b2e'
+      fontFamily: '"Tildunk", sans-serif', fontSize: 13, color: '#9c3b2e'
     }).setOrigin(0.5);
     const qText = this.add.text(width / 2, height / 2 - 138, qData.q, {
-      fontFamily: 'Georgia, serif', fontSize: 19, color: '#3b2410', align: 'center',
+      fontFamily: '"Tildunk", Georgia, serif', fontSize: 19, color: '#3b2410', align: 'center',
       wordWrap: { width: 460 }
     }).setOrigin(0.5, 0);
 
@@ -758,17 +839,33 @@ showQuizQuestion() {
 
     const { width, height } = this.scale;
     const verdict = this.add.text(width / 2, height / 2 + 96, isCorrect ? 'Correct!' : 'Not quite.', {
-      fontFamily: 'Georgia, serif', fontSize: 17, fontStyle: 'bold',
+      fontFamily: '"Tildunk", Georgia, serif', fontSize: 17, fontStyle: 'bold',
       color: isCorrect ? '#3c7a3e' : '#9c3b2e'
     }).setOrigin(0.5);
     const explanationTxt = this.add.text(width / 2, height / 2 + 118, qData.explanation || '', {
-      fontFamily: 'sans-serif', fontSize: 13, color: '#3b2410', align: 'center',
+      fontFamily: '"Tildunk", sans-serif', fontSize: 13, color: '#3b2410', align: 'center',
       wordWrap: { width: 460 }
     }).setOrigin(0.5, 0);
 
     container.add([verdict, explanationTxt]);
 
-    const { rect, txt } = createButton(this, width / 2, height / 2 + 170, 'Continue', () => {
+    // Continue sits below wherever the explanation text actually ends -
+    // longer explanations (or a wider font) can wrap to 3 lines instead of
+    // 2, and a fixed offset here let the button overlap the last line.
+    const continueY = explanationTxt.y + explanationTxt.height + 24;
+
+    // If that pushes the button past the panel's original bottom edge,
+    // grow the panel downward (top edge stays put) so the button - and the
+    // last line of explanation text - stay inside the cream box instead of
+    // spilling past its border.
+    const requiredBottom = continueY + 20 + 16;
+    if (this.quizPanel && requiredBottom > this.quizPanel.y + this.quizPanel.height / 2) {
+      const newHeight = requiredBottom - this.quizPanelTop;
+      this.quizPanel.setSize(540, newHeight);
+      this.quizPanel.y = this.quizPanelTop + newHeight / 2;
+    }
+
+    const { rect, txt } = createButton(this, width / 2, continueY, 'Continue', () => {
       container.destroy();
       this.answerQuiz(isCorrect);
     }, { width: 160, height: 40, fontSize: 16, color: 0x3c7a3e, hoverColor: 0x4c9a4e });
@@ -817,15 +914,15 @@ const { width, height } = this.scale;
     const overlay = this.add.rectangle(width / 2, height / 2, width, height, 0x000000, 0.55).setInteractive().setScrollFactor(0);
     const panel = this.add.rectangle(width / 2, height / 2, 460, 240, 0xfff8e7, 1).setStrokeStyle(4, 0x9c3b2e);
     const title = this.add.text(width / 2, height / 2 - 80, 'Journal Page #4 Unlocked!', {
-      fontFamily: 'Georgia, serif', fontSize: 22, color: '#9c3b2e', fontStyle: 'bold'
+      fontFamily: '"Tildunk", Georgia, serif', fontSize: 22, color: '#9c3b2e', fontStyle: 'bold'
     }).setOrigin(0.5);
     const scoreTxt = this.add.text(width / 2, height / 2 - 34, `You remembered ${this.quizScore} / ${this.quizQuestions.length}.`, {
-      fontFamily: 'sans-serif', fontSize: 16, color: '#3b2410'
+      fontFamily: '"Tildunk", sans-serif', fontSize: 16, color: '#3b2410'
     }).setOrigin(0.5);
     const flavor = this.add.text(width / 2, height / 2, chapter5Ready
       ? 'The Balut Capital — recorded in the journal. Chapter 5 awaits.'
       : 'The Balut Capital — recorded in the journal. Chapter 5 is still being written — more adventures coming soon!', {
-      fontFamily: 'sans-serif', fontSize: 14, color: '#6b4a2f', align: 'center', wordWrap: { width: 380 }
+      fontFamily: '"Tildunk", sans-serif', fontSize: 14, color: '#6b4a2f', align: 'center', wordWrap: { width: 380 }
     }).setOrigin(0.5, 0);
 
     container.add([overlay, panel, title, scoreTxt, flavor]);

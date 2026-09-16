@@ -1696,13 +1696,13 @@ class PrologueScene extends Phaser.Scene {
     // Ensure Lola renders below player
     this.lola.setDepth(0);
     this.lolaPrompt = this.add.text(this.lola.x, this.lola.y - 90, '', {
-      fontFamily: 'sans-serif', fontSize: 13, color: '#fff8e7', backgroundColor: '#000000aa',
+      fontFamily: '"Tildunk", sans-serif', fontSize: 13, color: '#fff8e7', backgroundColor: '#000000aa',
       padding: { x: 6, y: 3 }
     }).setOrigin(0.5).setVisible(false);
     // Generic "near a landmark" hint - repositioned each frame above
     // whichever quest object (well/stall/statue) the player is closest to.
     this.interactPrompt = this.add.text(0, 0, 'Press E to interact', {
-      fontFamily: 'sans-serif', fontSize: 13, color: '#fff8e7', backgroundColor: '#000000aa',
+      fontFamily: '"Tildunk", sans-serif', fontSize: 13, color: '#fff8e7', backgroundColor: '#000000aa',
       padding: { x: 6, y: 3 }
     }).setOrigin(0.5).setVisible(false).setDepth(100000);
     this.returnFlag = this.add.text(this.lola.x, this.lola.y - 60, '❗', { fontSize: 26 })
@@ -1739,7 +1739,7 @@ class PrologueScene extends Phaser.Scene {
       this.physics.add.existing(rect, true);
       this.questObstacles.push(rect);
       const check = this.add.text(o.x, o.y, '✓', {
-        fontFamily: 'sans-serif', fontSize: 22, color: '#3c7a3e', fontStyle: 'bold'
+        fontFamily: '"Tildunk", sans-serif', fontSize: 22, color: '#3c7a3e', fontStyle: 'bold'
       }).setOrigin(0.5).setVisible(false).setDepth(o.y + 1);
       o.found = false;
       o.rect = rect;
@@ -1780,42 +1780,45 @@ class PrologueScene extends Phaser.Scene {
     const displayName = character.charAt(0).toUpperCase() + character.slice(1);
     this.displayName = displayName;
     this.add.text(14, 12, displayName, {
-      fontFamily: 'Georgia, serif', fontSize: 18, color: '#fff8e7'
+      fontFamily: '"Tildunk", Georgia, serif', fontSize: 18, color: '#fff8e7'
     }).setShadow(1, 1, '#000000aa', 2, true, true).setScrollFactor(0).setDepth(900);
 
     this.add.text(width / 2, 16, isEnding ? 'Pateros Plaza — The Journal, Restored' : 'Prologue: Discover Pateros Plaza', {
-      fontFamily: 'Georgia, serif', fontSize: 16, color: '#f5e2c8'
+      fontFamily: '"Tildunk", Georgia, serif', fontSize: 16, color: '#f5e2c8'
     }).setOrigin(0.5, 0).setScrollFactor(0).setDepth(900);
 
-    const taskBtn = createButton(this, width - 84, 27, 'Task', () => {
+    // Wooden-Gold UI icon pack - same plank button used for Start
+    // Adventure/Chapters on the Main Menu (see createWoodButton in ui.js),
+    // sized down to fit the gameplay HUD.
+    const taskBtn = createWoodButton(this, width - 84, 27, 'Task', () => {
       if (!this.locked) {
         this.locked = true;
         this.showObjectivesModal();
       }
-    }, { width: 140, height: 30, fontSize: 13 });
-    this.taskBtnRect = taskBtn.rect.setScrollFactor(0).setDepth(900);
+    }, { width: 150, height: 40, fontSize: 15 });
+    this.taskBtnRect = taskBtn.image.setScrollFactor(0).setDepth(900);
     this.taskBtnTxt = taskBtn.txt.setScrollFactor(0).setDepth(901);
     this.taskBtnRect.setVisible(false);
     this.taskBtnTxt.setVisible(false);
     this.updateProgress();
 
-    const journalBtn = createButton(this, 66, height - 30, 'Journal', () => {
+    const journalBtn = createWoodButton(this, 66, height - 30, 'Journal', () => {
       if (!this.locked) {
         this.locked = true;
         this.showJournalModal();
       }
-    }, { width: 110, height: 34, fontSize: 13 });
-    journalBtn.rect.setScrollFactor(0).setDepth(900);
+    }, { width: 130, height: 40, fontSize: 14 });
+    journalBtn.image.setScrollFactor(0).setDepth(900);
     journalBtn.txt.setScrollFactor(0).setDepth(901);
 
-    const menuBtn = createButton(this, width - 66, height - 30, 'Menu', () => {
+    const menuBtn = createWoodButton(this, width - 66, height - 30, 'Menu', () => {
       if (!this.locked) { this.locked = true; showPauseMenu(this); }
-    }, { width: 110, height: 34, fontSize: 13 });
-    menuBtn.rect.setScrollFactor(0).setDepth(900);
+    }, { width: 130, height: 40, fontSize: 14 });
+    menuBtn.image.setScrollFactor(0).setDepth(900);
     menuBtn.txt.setScrollFactor(0).setDepth(901);
 
     this.add.text(width / 2, height - 12, 'WASD to move · E to interact · Esc for menu', {
-      fontFamily: 'sans-serif', fontSize: 12, color: '#9aa0aa'
+      fontFamily: '"Tildunk", sans-serif', fontSize: 12, color: '#9aa0aa'
     }).setOrigin(0.5, 1).setScrollFactor(0).setDepth(900);
 
     // --- curtain-open reveal - opening dialogue waits for it to finish ---
@@ -2078,11 +2081,11 @@ class PrologueScene extends Phaser.Scene {
     const bg = this.add.rectangle(width / 2, height / 2, width, height, 0x1d1f24, 1);
     const title = this.add.text(width / 2, height / 2 - 40,
       'History survives when stories\nare remembered and passed on.', {
-        fontFamily: 'Georgia, serif', fontSize: 23, color: '#f5e2c8', align: 'center',
+        fontFamily: '"Tildunk", Georgia, serif', fontSize: 23, color: '#f5e2c8', align: 'center',
         wordWrap: { width: 620 }
       }).setOrigin(0.5);
     const sub = this.add.text(width / 2, height / 2 + 44, 'Journal complete - 5 / 5 pages restored.', {
-      fontFamily: 'sans-serif', fontSize: 14, color: '#9aa0aa'
+      fontFamily: '"Tildunk", sans-serif', fontSize: 14, color: '#9aa0aa'
     }).setOrigin(0.5);
 
     container.add([bg, title, sub]);
@@ -2135,21 +2138,21 @@ showObjectivesModal() {
     const top = height / 2 - panelH / 2;
 
     const title = this.add.text(width / 2, top + 26, 'Objectives', {
-      fontFamily: 'Georgia, serif', fontSize: 20, color: '#9c3b2e', fontStyle: 'bold'
+      fontFamily: '"Tildunk", Georgia, serif', fontSize: 20, color: '#9c3b2e', fontStyle: 'bold'
     }).setOrigin(0.5);
     const allObjectsFound = this.objects.every(o => o.found);
     const subtitle = this.add.text(width / 2, top + 50,
       allObjectsFound ? 'All found — now report back to Lola:' : 'Find these around the plaza:', {
-      fontFamily: 'sans-serif', fontSize: 13, color: '#6b4a2f'
+      fontFamily: '"Tildunk", sans-serif', fontSize: 13, color: '#6b4a2f'
     }).setOrigin(0.5);
     const hint = this.add.text(width / 2, top + 70, 'Hover a found item to see what you learned', {
-      fontFamily: 'sans-serif', fontSize: 11, color: '#9aa0aa', fontStyle: 'italic'
+      fontFamily: '"Tildunk", sans-serif', fontSize: 11, color: '#9aa0aa', fontStyle: 'italic'
     }).setOrigin(0.5);
 
     container.add([overlay, panel, title, subtitle, hint]);
 
     const tooltipTxt = this.add.text(width / 2, top + headerH + tasks.length * rowH + 14, '', {
-      fontFamily: 'sans-serif', fontSize: 12, color: '#3b2410', align: 'center',
+      fontFamily: '"Tildunk", sans-serif', fontSize: 12, color: '#3b2410', align: 'center',
       wordWrap: { width: 330 }
     }).setOrigin(0.5, 0).setVisible(false);
     container.add(tooltipTxt);
@@ -2158,17 +2161,17 @@ showObjectivesModal() {
       const y = top + headerH + i * rowH;
       const found = o.found;
       const mark = this.add.text(width / 2 - 150, y, found ? '✓' : '—', {
-        fontFamily: 'sans-serif', fontSize: 16, fontStyle: 'bold',
+        fontFamily: '"Tildunk", sans-serif', fontSize: 16, fontStyle: 'bold',
         color: found ? '#3c7a3e' : '#9aa0aa'
       }).setOrigin(0, 0.5);
       const label = this.add.text(width / 2 - 122, y, o.type === 'task' ? o.name : `${o.name} x1`, {
-        fontFamily: 'sans-serif', fontSize: 15,
+        fontFamily: '"Tildunk", sans-serif', fontSize: 15,
         color: found ? '#3c7a3e' : '#3b2410'
       }).setOrigin(0, 0.5);
       const status = this.add.text(width / 2 + 150, y, found
         ? (o.type === 'task' ? 'Done' : 'Found')
         : (o.type === 'task' ? 'Go talk to her' : 'Not found'), {
-        fontFamily: 'sans-serif', fontSize: 11,
+        fontFamily: '"Tildunk", sans-serif', fontSize: 11,
         color: found ? '#3c7a3e' : '#9aa0aa'
       }).setOrigin(1, 0.5);
       container.add([mark, label, status]);
@@ -2210,7 +2213,7 @@ showJournalModal() {
     const top = height / 2 - panelH / 2;
 
     const title = this.add.text(width / 2, top + 28, "Lola's Journal", {
-      fontFamily: 'Georgia, serif', fontSize: 20, color: '#9c3b2e', fontStyle: 'bold'
+      fontFamily: '"Tildunk", Georgia, serif', fontSize: 20, color: '#9c3b2e', fontStyle: 'bold'
     }).setOrigin(0.5);
 
     container.add([overlay, panel, title]);
@@ -2227,16 +2230,16 @@ showJournalModal() {
       const unlocked = pages.includes(ch.id);
       const y = top + 62 + i * rowH;
       const mark = this.add.text(width / 2 - 198, y, unlocked ? '✓' : '🔒', {
-        fontFamily: 'sans-serif', fontSize: 15,
+        fontFamily: '"Tildunk", sans-serif', fontSize: 15,
         color: unlocked ? '#3c7a3e' : '#9aa0aa'
       }).setOrigin(0, 0.5);
       const label = this.add.text(width / 2 - 172, y, `Page ${ch.id}: ${ch.title}`, {
-        fontFamily: 'sans-serif', fontSize: 13,
+        fontFamily: '"Tildunk", sans-serif', fontSize: 13,
         color: unlocked ? '#3b2410' : '#9aa0aa',
         wordWrap: { width: 300 }
       }).setOrigin(0, 0.5);
       const status = this.add.text(width / 2 + 198, y, unlocked ? 'Unlocked' : 'Locked', {
-        fontFamily: 'sans-serif', fontSize: 11,
+        fontFamily: '"Tildunk", sans-serif', fontSize: 11,
         color: unlocked ? '#3c7a3e' : '#9aa0aa'
       }).setOrigin(1, 0.5);
       container.add([mark, label, status]);

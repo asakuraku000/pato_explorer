@@ -1,3 +1,11 @@
+@font-face {
+  font-family: 'Tildunk';
+  src: url('../assets/fonts/tildunk.otf') format('opentype');
+  font-weight: normal;
+  font-style: normal;
+  font-display: block; /* game text shouldn't flash in the fallback font */
+}
+
 html, body {
   margin: 0;
   height: 100%;

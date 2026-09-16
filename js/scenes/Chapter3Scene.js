@@ -289,6 +289,55 @@ function buildChapter3TileTypes(mapData) {
   return cfg;
 }
 
+// ==========================================================================
+// MINI-GAME 2 - Dodge the Patrol
+// A real-time sneak across the grounds, played out instead of read off a
+// card: Spanish patrol guards walk fixed beats, each lit by a visible
+// "notice" radius, while Hiraya moves freely (WASD/arrows) to reach every
+// hidden message scattered around the field without being spotted. Same
+// "some things had to stay hidden" lesson the old sorting panel taught,
+// just felt as movement + risk instead of a click-through quiz - closer
+// in spirit to Chapter 1's River Run than to the other chapters' second
+// mini-games.
+// ==========================================================================
+const CHAPTER3_PATROL_START_LIVES = 3;
+const CHAPTER3_PATROL_PLAYER_SPEED = 190; // px/sec, free 2D movement (not lane-locked)
+const CHAPTER3_PATROL_CAUGHT_INVULN_MS = 1100; // brief breathing room right after being spotted
+const CHAPTER3_PATROL_CATCH_RADIUS = 30; // how close to a message counts as "picked up"
+
+// The messages to sneak across the field, one per pickup. Flavor text
+// keeps the "some things had to stay hidden" lesson the old Coded
+// Message mini-game taught, just delivered as a toast on pickup instead
+// of a multiple-choice panel.
+const CHAPTER3_PATROL_MESSAGES = [
+  { emoji: '📜', label: 'a meeting place and time', note: 'Meeting details had to stay hidden — if the authorities learned them, it could mean capture.' },
+  { emoji: '📜', label: 'a list of fellow members', note: 'Names of members were some of the most dangerous information to let slip.' },
+  { emoji: '✉️', label: 'a coded supply request', note: 'Even ordinary requests were coded once they touched the movement.' },
+  { emoji: '✉️', label: 'a warning for a safehouse', note: 'Warnings had to reach the right hands quickly, and quietly.' }
+];
+
+// Where each message waits, as fractions of the playfield - two just past
+// the lower guard's beat, two more past all three, so reaching the far
+// pair means timing multiple patrols instead of just one.
+const CHAPTER3_PATROL_MESSAGE_SPOTS = [
+  { x: 0.24, y: 0.54 },
+  { x: 0.76, y: 0.54 },
+  { x: 0.24, y: 0.14 },
+  { x: 0.76, y: 0.14 }
+];
+
+// Each guard walks a fixed straight line, back and forth, forever.
+// Positions are fractions of the playfield (from/to along the beat,
+// fixed = the cross-axis position) so the beat scales with whatever
+// resolution the game runs at - same idea as CHAPTER1_RIVER_LANE_X using
+// offsets instead of hard pixel coordinates. `radius` is how close the
+// player can get (in px) before being spotted.
+const CHAPTER3_PATROL_GUARDS = [
+  { axis: 'x', from: 0.16, to: 0.84, fixed: 0.30, speed: 95, radius: 72 },
+  { axis: 'y', from: 0.22, to: 0.78, fixed: 0.52, speed: 80, radius: 68 },
+  { axis: 'x', from: 0.20, to: 0.80, fixed: 0.74, speed: 115, radius: 76 }
+];
+
 class Chapter3Scene extends Phaser.Scene {
   constructor() {
     super('Chapter3');
@@ -306,6 +355,13 @@ class Chapter3Scene extends Phaser.Scene {
     this.load.image('quest_supplies', 'assets/icons/ch3-bamboo-tube.png');
     this.load.image('quest_marker', 'assets/icons/ch3-safehouse-mark.png');
     this.load.image('quest_armband', 'assets/icons/ch3-anting-anting.png');
+
+    // Dodge the Patrol (MINI-GAME 2, below) - Spanish guard walk-cycle,
+    // same 12-wide grid convention as the player sheets: 54x96 frames,
+    // row0 = front/down (12), row1 = back/up (12), row2 = side-profile
+    // (11, faces left by default - flipped to face right same as the
+    // player sheets do). See createPatrolGuardAnims().
+    this.load.spritesheet('patrol-guard-sheet', 'assets/sprites/ch3-patrol-guard.png', { frameWidth: 54, frameHeight: 96 });
 
     Object.values(CHAPTER3_MAP_DATA.tileTypes).forEach(t => {
       if (t.imageKey) {
@@ -329,7 +385,7 @@ class Chapter3Scene extends Phaser.Scene {
     });
   }
 
-  create() {
+  create(data) {
     SoundManager.playMusic(this, 'bg-game');
     const { width, height } = this.scale;
     const character = this.registry.get('selectedCharacter') || 'hiraya';
@@ -400,7 +456,7 @@ class Chapter3Scene extends Phaser.Scene {
      // Ensure Kapitan Andres renders below player
      this.kapitanAndres.setDepth(0);
     this.interactPrompt = this.add.text(this.kapitanAndres.x, this.kapitanAndres.y - 90, '', {
-      fontFamily: 'sans-serif', fontSize: 13, color: '#fff8e7', backgroundColor: '#000000aa',
+      fontFamily: '"Tildunk", sans-serif', fontSize: 13, color: '#fff8e7', backgroundColor: '#000000aa',
       padding: { x: 6, y: 3 }
     }).setOrigin(0.5).setVisible(false);
     this.returnFlag = this.add.text(this.kapitanAndres.x, this.kapitanAndres.y - 60, '❗', { fontSize: 26 })
@@ -436,14 +492,14 @@ class Chapter3Scene extends Phaser.Scene {
         ? this.add.image(o.x, o.y, icon.key).setDisplaySize(icon.w, icon.h).setAlpha(0.35).setDepth(o.y)
         : this.add.rectangle(o.x, o.y, 46, 46, o.color, 0.35).setStrokeStyle(2, 0xf5e2c8).setDepth(o.y);
       o.label = this.add.text(o.x, o.y - 34, 'Hidden', {
-        fontFamily: 'sans-serif', fontSize: 12, color: '#fff8e7', backgroundColor: '#000000aa',
+        fontFamily: '"Tildunk", sans-serif', fontSize: 12, color: '#fff8e7', backgroundColor: '#000000aa',
         padding: { x: 4, y: 2 }
       }).setOrigin(0.5).setDepth(o.y + 1);
       o.mark = this.add.text(o.x, o.y, '?', {
-        fontFamily: 'sans-serif', fontSize: 22, color: '#fff8e7', fontStyle: 'bold'
+        fontFamily: '"Tildunk", sans-serif', fontSize: 22, color: '#fff8e7', fontStyle: 'bold'
       }).setOrigin(0.5).setDepth(o.y + 1);
       o.check = this.add.text(o.x, o.y, '✓', {
-        fontFamily: 'sans-serif', fontSize: 22, color: '#ffffff', fontStyle: 'bold'
+        fontFamily: '"Tildunk", sans-serif', fontSize: 22, color: '#ffffff', fontStyle: 'bold'
       }).setOrigin(0.5).setVisible(false).setDepth(o.y + 1);
     });
 
@@ -479,42 +535,45 @@ class Chapter3Scene extends Phaser.Scene {
     // of scrolling away with the map now that the camera follows the player)
     const displayName = character.charAt(0).toUpperCase() + character.slice(1);
     this.add.text(14, 12, displayName, {
-      fontFamily: 'Georgia, serif', fontSize: 18, color: '#fff8e7'
+      fontFamily: '"Tildunk", Georgia, serif', fontSize: 18, color: '#fff8e7'
     }).setShadow(1, 1, '#000000aa', 2, true, true).setScrollFactor(0).setDepth(900);
 
     this.add.text(width / 2, 16, 'Chapter 3: Pateros in the Revolution', {
-      fontFamily: 'Georgia, serif', fontSize: 16, color: '#f5e2c8'
+      fontFamily: '"Tildunk", Georgia, serif', fontSize: 16, color: '#f5e2c8'
     }).setOrigin(0.5, 0).setShadow(1, 1, '#000000aa', 2, true, true).setScrollFactor(0).setDepth(900);
 
-    const taskBtn = createButton(this, width - 84, 27, 'Task', () => {
+    // Wooden-Gold UI icon pack - same plank button used for Start
+    // Adventure/Chapters on the Main Menu (see createWoodButton in ui.js),
+    // sized down to fit the gameplay HUD.
+    const taskBtn = createWoodButton(this, width - 84, 27, 'Task', () => {
       if (this.mode === 'explore' && !this.locked) {
         this.locked = true;
         this.showObjectivesModal();
       }
-    }, { width: 140, height: 30, fontSize: 13 });
-    this.taskBtnRect = taskBtn.rect.setScrollFactor(0).setDepth(900);
+    }, { width: 150, height: 40, fontSize: 15 });
+    this.taskBtnRect = taskBtn.image.setScrollFactor(0).setDepth(900);
     this.taskBtnTxt = taskBtn.txt.setScrollFactor(0).setDepth(901);
     this.taskBtnRect.setVisible(false);
     this.taskBtnTxt.setVisible(false);
     this.updateProgress();
 
-    const journalBtn = createButton(this, 66, height - 30, 'Journal', () => {
+    const journalBtn = createWoodButton(this, 66, height - 30, 'Journal', () => {
       if (this.mode === 'explore' && !this.locked) {
         this.locked = true;
         this.showJournalModal();
       }
-    }, { width: 110, height: 34, fontSize: 13 });
-    journalBtn.rect.setScrollFactor(0).setDepth(900);
+    }, { width: 130, height: 40, fontSize: 14 });
+    journalBtn.image.setScrollFactor(0).setDepth(900);
     journalBtn.txt.setScrollFactor(0).setDepth(901);
 
-    const menuBtn = createButton(this, width - 66, height - 30, 'Menu', () => {
+    const menuBtn = createWoodButton(this, width - 66, height - 30, 'Menu', () => {
       if (!this.locked) { this.locked = true; showPauseMenu(this); }
-    }, { width: 110, height: 34, fontSize: 13 });
-    menuBtn.rect.setScrollFactor(0).setDepth(900);
+    }, { width: 130, height: 40, fontSize: 14 });
+    menuBtn.image.setScrollFactor(0).setDepth(900);
     menuBtn.txt.setScrollFactor(0).setDepth(901);
 
     this.add.text(width / 2, height - 12, 'WASD to move · E to interact · Esc for menu', {
-      fontFamily: 'sans-serif', fontSize: 12, color: '#9aa0aa'
+      fontFamily: '"Tildunk", sans-serif', fontSize: 12, color: '#9aa0aa'
     }).setOrigin(0.5, 1).setScrollFactor(0).setDepth(900);
 
     // --- curtain-open reveal - opening dialogue waits for it to finish ---
@@ -545,6 +604,22 @@ class Chapter3Scene extends Phaser.Scene {
     }
     if (!this.anims.exists(`${p}-walk-side`)) {
       this.anims.create({ key: `${p}-walk-side`, frames: this.anims.generateFrameNumbers(textureKey, { start: 24, end: 34 }), frameRate: 12, repeat: -1 });
+    }
+  }
+
+  // Same idea as createPlayerAnims() above, just for the patrol-guard-sheet
+  // (see preload()). Guards only ever walk a straight beat - no idle pose
+  // needed - so this only ever needs to run once per scene lifetime,
+  // called from launchPatrol() right before the guards are built.
+  createPatrolGuardAnims() {
+    if (!this.anims.exists('patrol-guard-walk-down')) {
+      this.anims.create({ key: 'patrol-guard-walk-down', frames: this.anims.generateFrameNumbers('patrol-guard-sheet', { start: 0, end: 11 }), frameRate: 10, repeat: -1 });
+    }
+    if (!this.anims.exists('patrol-guard-walk-up')) {
+      this.anims.create({ key: 'patrol-guard-walk-up', frames: this.anims.generateFrameNumbers('patrol-guard-sheet', { start: 12, end: 23 }), frameRate: 10, repeat: -1 });
+    }
+    if (!this.anims.exists('patrol-guard-walk-side')) {
+      this.anims.create({ key: 'patrol-guard-walk-side', frames: this.anims.generateFrameNumbers('patrol-guard-sheet', { start: 24, end: 34 }), frameRate: 10, repeat: -1 });
     }
   }
 
@@ -587,22 +662,22 @@ showObjectivesModal() {
     const top = height / 2 - panelH / 2;
 
     const title = this.add.text(width / 2, top + 26, 'Objectives', {
-      fontFamily: 'Georgia, serif', fontSize: 20, color: '#9c3b2e', fontStyle: 'bold'
+      fontFamily: '"Tildunk", Georgia, serif', fontSize: 20, color: '#9c3b2e', fontStyle: 'bold'
     }).setOrigin(0.5);
     const allObjectsFound = this.objects.every(o => o.found);
     const subtitle = this.add.text(width / 2, top + 50,
       allObjectsFound ? 'All found — now report back to Kapitan Andres:' : 'Search the grounds for what was left behind:', {
-      fontFamily: 'sans-serif', fontSize: 13, color: '#6b4a2f'
+      fontFamily: '"Tildunk", sans-serif', fontSize: 13, color: '#6b4a2f'
     }).setOrigin(0.5);
     const hint = this.add.text(width / 2, top + 70, 'Hover a found item to see what you learned', {
-      fontFamily: 'sans-serif', fontSize: 11, color: '#9aa0aa', fontStyle: 'italic'
+      fontFamily: '"Tildunk", sans-serif', fontSize: 11, color: '#9aa0aa', fontStyle: 'italic'
     }).setOrigin(0.5);
 
     container.add([overlay, panel, title, subtitle, hint]);
 
     // Shared tooltip element - one instance, repositioned/retexted per hover.
     const tooltipTxt = this.add.text(width / 2, top + headerH + tasks.length * rowH + 14, '', {
-      fontFamily: 'sans-serif', fontSize: 12, color: '#3b2410', align: 'center',
+      fontFamily: '"Tildunk", sans-serif', fontSize: 12, color: '#3b2410', align: 'center',
       wordWrap: { width: 330 }
     }).setOrigin(0.5, 0).setVisible(false);
     container.add(tooltipTxt);
@@ -611,17 +686,17 @@ showObjectivesModal() {
       const y = top + headerH + i * rowH;
       const found = t.found;
       const mark = this.add.text(width / 2 - 150, y, found ? '✓' : '—', {
-        fontFamily: 'sans-serif', fontSize: 16, fontStyle: 'bold',
+        fontFamily: '"Tildunk", sans-serif', fontSize: 16, fontStyle: 'bold',
         color: found ? '#3c7a3e' : '#9aa0aa'
       }).setOrigin(0, 0.5);
       const label = this.add.text(width / 2 - 122, y, t.type === 'task' ? t.name : `${t.name} x1`, {
-        fontFamily: 'sans-serif', fontSize: 15,
+        fontFamily: '"Tildunk", sans-serif', fontSize: 15,
         color: found ? '#3c7a3e' : '#3b2410'
       }).setOrigin(0, 0.5);
       const status = this.add.text(width / 2 + 150, y, found
         ? (t.type === 'task' ? 'Done' : 'Found')
         : (t.type === 'task' ? 'Go talk to him' : 'Not found'), {
-        fontFamily: 'sans-serif', fontSize: 11,
+        fontFamily: '"Tildunk", sans-serif', fontSize: 11,
         color: found ? '#3c7a3e' : '#9aa0aa'
       }).setOrigin(1, 0.5);
       container.add([mark, label, status]);
@@ -665,7 +740,7 @@ showJournalModal() {
     const top = height / 2 - panelH / 2;
 
     const title = this.add.text(width / 2, top + 28, "Lola's Journal", {
-      fontFamily: 'Georgia, serif', fontSize: 20, color: '#9c3b2e', fontStyle: 'bold'
+      fontFamily: '"Tildunk", Georgia, serif', fontSize: 20, color: '#9c3b2e', fontStyle: 'bold'
     }).setOrigin(0.5);
 
     container.add([overlay, panel, title]);
@@ -674,16 +749,16 @@ showJournalModal() {
       const unlocked = pages.includes(ch.id);
       const y = top + 62 + i * rowH;
       const mark = this.add.text(width / 2 - 198, y, unlocked ? '✓' : '🔒', {
-        fontFamily: 'sans-serif', fontSize: 15,
+        fontFamily: '"Tildunk", sans-serif', fontSize: 15,
         color: unlocked ? '#3c7a3e' : '#9aa0aa'
       }).setOrigin(0, 0.5);
       const label = this.add.text(width / 2 - 172, y, `Page ${ch.id}: ${ch.title}`, {
-        fontFamily: 'sans-serif', fontSize: 13,
+        fontFamily: '"Tildunk", sans-serif', fontSize: 13,
         color: unlocked ? '#3b2410' : '#9aa0aa',
         wordWrap: { width: 300 }
       }).setOrigin(0, 0.5);
       const status = this.add.text(width / 2 + 198, y, unlocked ? 'Unlocked' : 'Locked', {
-        fontFamily: 'sans-serif', fontSize: 11,
+        fontFamily: '"Tildunk", sans-serif', fontSize: 11,
         color: unlocked ? '#3c7a3e' : '#9aa0aa'
       }).setOrigin(1, 0.5);
       container.add([mark, label, status]);
@@ -730,8 +805,305 @@ showJournalModal() {
     showDialogue(this, 'Kapitan Andres', [
       'You found every message — the flag, the coded letters, the armband, the hidden supplies, the secret marker.',
       'We worked in secret because discovery meant capture, or worse — that is why everything had to stay hidden.',
+      'Before you go — a patrol is making its rounds near the safehouse right now. Help me get a few more messages past them.'
+    ], () => this.startPatrolTransition(), ['kapitan-andres-happy', 'kapitan-andres-firm', 'kapitan-andres-firm']);
+  }
+
+  // ==========================================================================
+  // MINI-GAME 2 - Dodge the Patrol (see CHAPTER3_PATROL_* above)
+  // ==========================================================================
+
+  // Curtain-close over the grounds, build the patrol minigame behind it,
+  // then curtain-open into it - same close/build/open pairing Chapter 1's
+  // River Run uses, so this reads as "stepping into the patrol's path"
+  // rather than a scene change.
+  startPatrolTransition() {
+    this.mode = 'transition';
+    this.locked = true;
+    curtainClose(this, () => {
+      this.launchPatrol();
+      curtainOpen(this, () => this.showPatrolIntro());
+    });
+  }
+
+  showPatrolIntro() {
+    showDialogue(this, 'Kapitan Andres', [
+      'Stay low and keep moving. WASD or the arrows — the lantern light is their notice, not a wall, so timing gets you past it.',
+      `Get all ${CHAPTER3_PATROL_MESSAGES.length} messages across. Get spotted three times and we'll have to fall back.`
+    ], () => {
+      this.mode = 'patrol';
+    }, ['kapitan-andres-firm', 'kapitan-andres-point']);
+  }
+
+  // Builds the full-screen patrol field: dim backdrop, faint beat guides,
+  // HUD, the guards (a lantern-glow "notice" radius + emoji, walking a
+  // fixed line back and forth), the scattered messages, and the player's
+  // own token. Purely procedural (emoji + shapes, reusing the real
+  // player sheet for the token) so this never depends on art that hasn't
+  // been added to assets/ yet - same graceful-fallback idea the rest of
+  // this file uses.
+  launchPatrol() {
+    const { width, height } = this.scale;
+    this.patrolLives = CHAPTER3_PATROL_START_LIVES;
+    this.patrolCollected = 0;
+    this.patrolInvulnUntil = 0;
+    this.patrolMessages = [];
+    this.patrolGuards = [];
+
+    this.patrolContainer = this.add.container(0, 0).setDepth(10500).setScrollFactor(0);
+
+    // Dim, worn backdrop instead of the daylight grass tile - this plays
+    // out like the grounds after dark, a tenser beat than the explore
+    // portion, so it reads as its own distinct scene.
+    const bg = this.add.rectangle(width / 2, height / 2, width, height, 0x1c1712, 1).setScrollFactor(0);
+    this.patrolContainer.add(bg);
+
+    // Faint guides along each guard's beat so the patrol pattern is
+    // readable at a glance instead of something you have to memorize blind.
+    CHAPTER3_PATROL_GUARDS.forEach(g => {
+      let line;
+      if (g.axis === 'x') {
+        const y = g.fixed * height;
+        line = this.add.rectangle(width * (g.from + g.to) / 2, y, width * (g.to - g.from), 2, 0xf5e2c8, 0.18).setScrollFactor(0);
+      } else {
+        const x = g.fixed * width;
+        line = this.add.rectangle(x, height * (g.from + g.to) / 2, 2, height * (g.to - g.from), 0xf5e2c8, 0.18).setScrollFactor(0);
+      }
+      this.patrolContainer.add(line);
+    });
+
+    // --- guards: lantern-glow notice radius + an animated patrol-guard
+    // sprite (see createPatrolGuardAnims/preload), placed along their beat
+    // with fromPx/toPx/fixedPx cached so updatePatrol() never has to
+    // re-derive them from fractions every frame ---
+    this.createPatrolGuardAnims();
+    CHAPTER3_PATROL_GUARDS.forEach(g => {
+      const fromPx = g.axis === 'x' ? g.from * width : g.from * height;
+      const toPx = g.axis === 'x' ? g.to * width : g.to * height;
+      const fixedPx = g.axis === 'x' ? g.fixed * height : g.fixed * width;
+      const posAlong = Phaser.Math.FloatBetween(fromPx, toPx);
+      const x = g.axis === 'x' ? posAlong : fixedPx;
+      const y = g.axis === 'x' ? fixedPx : posAlong;
+      const dir = Math.random() < 0.5 ? 1 : -1;
+      const glow = this.add.circle(x, y, g.radius, 0xc24a38, 0.16).setScrollFactor(0);
+      const body = this.add.sprite(x, y, 'patrol-guard-sheet', 0).setScrollFactor(0);
+      this.patrolContainer.add([glow, body]);
+      this.patrolGuards.push({ cfg: g, glow, body, fromPx, toPx, fixedPx, posAlong, dir });
+    });
+
+    // --- messages scattered across the field (see CHAPTER3_PATROL_MESSAGE_SPOTS) ---
+    CHAPTER3_PATROL_MESSAGE_SPOTS.forEach((spot, i) => {
+      const data = CHAPTER3_PATROL_MESSAGES[i];
+      const x = spot.x * width, y = spot.y * height;
+      const icon = this.add.text(x, y, data.emoji, { fontSize: 30 }).setOrigin(0.5).setScrollFactor(0);
+      this.patrolContainer.add(icon);
+      this.patrolMessages.push({ x, y, icon, data, collected: false });
+    });
+
+    // --- the player's own token - a fresh sprite reusing the selected
+    // character's sheet/anims, independent of the tilemap-bound
+    // this.player so this overlay never touches the map's physics world ---
+    const startX = width * 0.5, startY = height * 0.92;
+    this.patrolPlayer = this.add.sprite(startX, startY, `${this.prefix}-sheet`, 0).setScrollFactor(0);
+    this.patrolPlayer.facing = 'up';
+    this.patrolContainer.add(this.patrolPlayer);
+
+    // --- HUD (added last so it always renders above guards/messages/player) ---
+    this.patrolTitleTxt = this.add.text(width / 2, 18, 'Dodge the Patrol — Sneak the Messages Through', {
+      fontFamily: '"Tildunk", Georgia, serif', fontSize: 16, color: '#fff8e7', backgroundColor: '#000000aa', padding: { x: 10, y: 4 }
+    }).setOrigin(0.5, 0).setScrollFactor(0);
+    this.patrolCountTxt = this.add.text(16, 16, `Messages: 0/${CHAPTER3_PATROL_MESSAGES.length}`, {
+      fontFamily: '"Tildunk", sans-serif', fontSize: 15, color: '#fff8e7', backgroundColor: '#000000aa', padding: { x: 8, y: 4 }
+    }).setScrollFactor(0);
+    this.patrolLivesTxt = this.add.text(width - 16, 16, '❤️❤️❤️', {
+      fontFamily: '"Tildunk", sans-serif', fontSize: 15, color: '#fff8e7', backgroundColor: '#000000aa', padding: { x: 8, y: 4 }
+    }).setOrigin(1, 0).setScrollFactor(0);
+    this.patrolHintTxt = this.add.text(width / 2, height - 14, "WASD / Arrows to move — stay out of the guards' lantern light", {
+      fontFamily: '"Tildunk", sans-serif', fontSize: 12, color: '#c9b896'
+    }).setOrigin(0.5, 1).setScrollFactor(0);
+    this.patrolContainer.add([this.patrolTitleTxt, this.patrolCountTxt, this.patrolLivesTxt, this.patrolHintTxt]);
+
+    this.updatePatrolHud();
+  }
+
+  // Per-frame driver for the 'patrol' mode - guard beats, free player
+  // movement, pickup checks, and guard-detection checks, in that order.
+  // Called from update() below instead of the normal explore-mode block.
+  updatePatrol(time, delta) {
+    const dt = delta / 1000;
+    const { width, height } = this.scale;
+
+    // --- guards: walk their beat, ping-ponging at each end ---
+    this.patrolGuards.forEach(g => {
+      g.posAlong += g.dir * g.cfg.speed * dt;
+      if (g.posAlong >= g.toPx) { g.posAlong = g.toPx; g.dir = -1; }
+      else if (g.posAlong <= g.fromPx) { g.posAlong = g.fromPx; g.dir = 1; }
+      const x = g.cfg.axis === 'x' ? g.posAlong : g.fixedPx;
+      const y = g.cfg.axis === 'x' ? g.fixedPx : g.posAlong;
+      g.glow.setPosition(x, y);
+      g.body.setPosition(x, y);
+
+      // Face/animate the guard along whichever axis it beats on - a
+      // horizontal beat plays the side walk (mirrored per direction, same
+      // "faces left by default" convention the player sheets use), a
+      // vertical beat plays down/up depending on which way it's headed.
+      if (g.cfg.axis === 'x') {
+        g.body.setFlipX(g.dir < 0);
+        g.body.play('patrol-guard-walk-side', true);
+      } else {
+        g.body.play(g.dir > 0 ? 'patrol-guard-walk-down' : 'patrol-guard-walk-up', true);
+      }
+    });
+
+    // --- player: free 2D movement, clamped to the playfield ---
+    const left = this.keys.left.isDown || this.cursors.left.isDown;
+    const right = this.keys.right.isDown || this.cursors.right.isDown;
+    const up = this.keys.up.isDown || this.cursors.up.isDown;
+    const down = this.keys.down.isDown || this.cursors.down.isDown;
+    let vx = 0, vy = 0;
+    if (left) vx -= 1;
+    if (right) vx += 1;
+    if (up) vy -= 1;
+    if (down) vy += 1;
+    const margin = 26;
+    const moving = vx !== 0 || vy !== 0;
+    SoundManager.setFootsteps(this, moving);
+    if (moving) {
+      const len = Math.hypot(vx, vy);
+      this.patrolPlayer.x = Phaser.Math.Clamp(this.patrolPlayer.x + (vx / len) * CHAPTER3_PATROL_PLAYER_SPEED * dt, margin, width - margin);
+      this.patrolPlayer.y = Phaser.Math.Clamp(this.patrolPlayer.y + (vy / len) * CHAPTER3_PATROL_PLAYER_SPEED * dt, margin, height - margin);
+      if (vy < 0) this.patrolPlayer.facing = 'up';
+      else if (vy > 0) this.patrolPlayer.facing = 'down';
+      else if (vx !== 0) { this.patrolPlayer.facing = 'side'; this.patrolPlayer.flipX = vx > 0; }
+      this.patrolPlayer.play(`${this.prefix}-walk-${this.patrolPlayer.facing}`, true);
+    } else {
+      this.patrolPlayer.anims.stop();
+      const idleFrame = { down: 0, up: 12, side: 24 }[this.patrolPlayer.facing];
+      this.patrolPlayer.setFrame(idleFrame);
+    }
+
+    // --- message pickups ---
+    this.patrolMessages.forEach(m => {
+      if (m.collected) return;
+      if (Phaser.Math.Distance.Between(this.patrolPlayer.x, this.patrolPlayer.y, m.x, m.y) < CHAPTER3_PATROL_CATCH_RADIUS) {
+        this.handlePatrolPickup(m);
+      }
+    });
+    if (this.mode !== 'patrol') return; // a pickup may have just completed the run
+
+    // --- guard detection (skipped during the post-catch invulnerability window) ---
+    if (time > this.patrolInvulnUntil) {
+      for (const g of this.patrolGuards) {
+        if (Phaser.Math.Distance.Between(this.patrolPlayer.x, this.patrolPlayer.y, g.glow.x, g.glow.y) < g.cfg.radius) {
+          this.handlePatrolCaught(g);
+          break;
+        }
+      }
+    }
+  }
+
+  // Small floating toast above the player - "+1 message" / "Spotted!"
+  // feedback in real time, instead of a click-through explanation panel.
+  showPatrolToast(text, colorCss) {
+    const toast = this.add.text(this.patrolPlayer.x, this.patrolPlayer.y - 44, text, {
+      fontFamily: '"Tildunk", sans-serif', fontSize: 13, fontStyle: 'bold', color: colorCss,
+      backgroundColor: '#fff8e7', padding: { x: 6, y: 3 }, align: 'center', wordWrap: { width: 220 }
+    }).setOrigin(0.5).setScrollFactor(0);
+    this.patrolContainer.add(toast);
+    this.tweens.add({
+      targets: toast, y: toast.y - 30, alpha: 0, duration: 900, ease: 'Cubic.easeOut',
+      onComplete: () => toast.destroy()
+    });
+  }
+
+  updatePatrolHud() {
+    this.patrolCountTxt.setText(`Messages: ${this.patrolCollected}/${CHAPTER3_PATROL_MESSAGES.length}`);
+    this.patrolLivesTxt.setText('❤️'.repeat(Math.max(0, this.patrolLives)));
+  }
+
+  handlePatrolPickup(m) {
+    m.collected = true;
+    m.icon.destroy();
+    this.patrolCollected++;
+    SoundManager.play(this, 'correct');
+    this.showPatrolToast(m.data.note, '#3c7a3e');
+    this.updatePatrolHud();
+    if (this.patrolCollected >= CHAPTER3_PATROL_MESSAGES.length) this.finishPatrol(true);
+  }
+
+  handlePatrolCaught(g) {
+    this.patrolLives--;
+    this.patrolInvulnUntil = this.time.now + CHAPTER3_PATROL_CAUGHT_INVULN_MS;
+    SoundManager.play(this, 'incorrect');
+    this.cameras.main.shake(160, 0.006);
+    this.showPatrolToast('Spotted! Fall back!', '#c24a38');
+
+    // Knock the player straight back away from the guard that spotted
+    // them, clamped to the playfield - the same "breathing room" idea as
+    // the invulnerability window, just visible instead of just a timer.
+    const { width, height } = this.scale;
+    const angle = Phaser.Math.Angle.Between(g.glow.x, g.glow.y, this.patrolPlayer.x, this.patrolPlayer.y);
+    const pushDist = 90;
+    this.patrolPlayer.x = Phaser.Math.Clamp(this.patrolPlayer.x + Math.cos(angle) * pushDist, 26, width - 26);
+    this.patrolPlayer.y = Phaser.Math.Clamp(this.patrolPlayer.y + Math.sin(angle) * pushDist, 26, height - 26);
+
+    // Flash the player sprite so the invulnerability window is readable.
+    this.tweens.add({ targets: this.patrolPlayer, alpha: 0.25, duration: 90, yoyo: true, repeat: 5 });
+
+    this.updatePatrolHud();
+    if (this.patrolLives <= 0) this.finishPatrol(false);
+  }
+
+  finishPatrol(success) {
+    if (this.mode !== 'patrol') return; // guard against double-trigger (last life + last message same frame)
+    this.mode = 'transition';
+    this.locked = true;
+    SoundManager.setFootsteps(this, false);
+    SoundManager.play(this, success ? 'complete' : 'incorrect');
+    curtainClose(this, () => {
+      if (this.patrolContainer) { this.patrolContainer.destroy(); this.patrolContainer = null; }
+      curtainOpen(this, () => {
+        if (success) this.showPatrolRecap();
+        else this.showPatrolFailRetry();
+      });
+    });
+  }
+
+  showPatrolRecap() {
+    const tally = `${this.patrolCollected}/${CHAPTER3_PATROL_MESSAGES.length}`;
+    this.locked = true;
+    showDialogue(this, 'Kapitan Andres', [
+      `Every message made it through — ${tally}, and not one of you spotted for long.`,
+      'That fear never really left us — every message carried that risk, every single time.',
       'Now you understand what our people faced. Let\'s see what you remember.'
     ], () => this.startQuiz(), ['kapitan-andres-happy', 'kapitan-andres-firm', 'kapitan-andres-firm']);
+  }
+
+  // Caught three times before every message made it through - Kapitan
+  // Andres talks it over, then it's straight back into a fresh run instead
+  // of quietly waving the miss through, so getting every message past the
+  // patrol actually has to happen rather than just being flavor text.
+  showPatrolFailRetry() {
+    const tally = `${this.patrolCollected}/${CHAPTER3_PATROL_MESSAGES.length}`;
+    this.locked = true;
+    showDialogue(this, 'Kapitan Andres', [
+      `That patrol nearly had you — you got ${tally} through before they closed in.`,
+      'Catch your breath. Let\'s try that crossing again.'
+    ], () => this.retryPatrol(), ['kapitan-andres-firm', 'kapitan-andres-point']);
+  }
+
+  // Same close/build/open pairing startPatrolTransition() uses, just
+  // skipping straight back into play instead of replaying the full
+  // how-to-dodge instructions a second time.
+  retryPatrol() {
+    this.mode = 'transition';
+    this.locked = true;
+    curtainClose(this, () => {
+      this.launchPatrol();
+      curtainOpen(this, () => {
+        this.mode = 'patrol';
+      });
+    });
   }
 
   interactWithObject(o) {
@@ -761,19 +1133,19 @@ showJournalModal() {
     this.quizQuestions = [
       {
         q: 'Who is Kapitan Andres meant to represent?',
-        options: ['A Katipunero from the revolution', 'A Spanish governor', 'A modern tour guide', 'A fisherman'],
+        options: ['A Katipunero from the revolution', 'A Spanish colonial official', 'A magbabalut from the duck farms', 'A member of the town council'],
         correct: 0,
         explanation: 'Kapitan Andres is a fictionalized Katipunero character inspired by the experiences of Pateros residents during the Philippine Revolution.'
       },
       {
         q: 'What movement did many Pateros residents become involved in?',
-        options: ['The Philippine Revolution', 'The building of the market', 'A fishing festival', 'A trade agreement'],
+        options: ['The Philippine Revolution', 'The building of the market', 'The 1700 municipal founding', 'A trade agreement'],
         correct: 0,
         explanation: 'Pateros residents were among those who became involved in the revolutionary movement.'
       },
       {
         q: 'Why did revolutionaries often hide messages and meet in secret?',
-        options: ['To avoid being discovered by the authorities', 'Because paper was scarce', 'It was just a tradition', 'To make the game harder'],
+        options: ['To avoid being discovered by the authorities', 'Because paper was scarce and expensive', 'To follow the same customs used at market meetings', 'Because they needed a permit from the local governor'],
         correct: 0,
         explanation: 'Katipuneros often organized and communicated secretly to avoid detection by the Spanish authorities.'
       }
@@ -788,11 +1160,15 @@ showQuizQuestion() {
 
     const overlay = this.add.rectangle(width / 2, height / 2, width, height, 0x000000, 0.45).setInteractive().setScrollFactor(0);
     const panel = this.add.rectangle(width / 2, height / 2, 540, 380, 0xfff8e7, 1).setStrokeStyle(4, 0x9c3b2e);
+    // Kept so showQuizFeedback() can grow the panel downward if a long
+    // explanation wraps to more lines than the base 380px height allows for.
+    this.quizPanel = panel;
+    this.quizPanelTop = panel.y - panel.height / 2;
     const qNum = this.add.text(width / 2, height / 2 - 164, `Question ${this.quizIndex + 1} / ${this.quizQuestions.length}`, {
-      fontFamily: 'sans-serif', fontSize: 13, color: '#9c3b2e'
+      fontFamily: '"Tildunk", sans-serif', fontSize: 13, color: '#9c3b2e'
     }).setOrigin(0.5);
     const qText = this.add.text(width / 2, height / 2 - 138, qData.q, {
-      fontFamily: 'Georgia, serif', fontSize: 19, color: '#3b2410', align: 'center',
+      fontFamily: '"Tildunk", Georgia, serif', fontSize: 19, color: '#3b2410', align: 'center',
       wordWrap: { width: 460 }
     }).setOrigin(0.5, 0);
 
@@ -828,17 +1204,33 @@ showQuizQuestion() {
 
     const { width, height } = this.scale;
     const verdict = this.add.text(width / 2, height / 2 + 96, isCorrect ? 'Correct!' : 'Not quite.', {
-      fontFamily: 'Georgia, serif', fontSize: 17, fontStyle: 'bold',
+      fontFamily: '"Tildunk", Georgia, serif', fontSize: 17, fontStyle: 'bold',
       color: isCorrect ? '#3c7a3e' : '#9c3b2e'
     }).setOrigin(0.5);
     const explanationTxt = this.add.text(width / 2, height / 2 + 118, qData.explanation || '', {
-      fontFamily: 'sans-serif', fontSize: 13, color: '#3b2410', align: 'center',
+      fontFamily: '"Tildunk", sans-serif', fontSize: 13, color: '#3b2410', align: 'center',
       wordWrap: { width: 460 }
     }).setOrigin(0.5, 0);
 
     container.add([verdict, explanationTxt]);
 
-    const { rect, txt } = createButton(this, width / 2, height / 2 + 170, 'Continue', () => {
+    // Continue sits below wherever the explanation text actually ends -
+    // longer explanations (or a wider font) can wrap to 3 lines instead of
+    // 2, and a fixed offset here let the button overlap the last line.
+    const continueY = explanationTxt.y + explanationTxt.height + 24;
+
+    // If that pushes the button past the panel's original bottom edge,
+    // grow the panel downward (top edge stays put) so the button - and the
+    // last line of explanation text - stay inside the cream box instead of
+    // spilling past its border.
+    const requiredBottom = continueY + 20 + 16;
+    if (this.quizPanel && requiredBottom > this.quizPanel.y + this.quizPanel.height / 2) {
+      const newHeight = requiredBottom - this.quizPanelTop;
+      this.quizPanel.setSize(540, newHeight);
+      this.quizPanel.y = this.quizPanelTop + newHeight / 2;
+    }
+
+    const { rect, txt } = createButton(this, width / 2, continueY, 'Continue', () => {
       container.destroy();
       this.answerQuiz(isCorrect);
     }, { width: 160, height: 40, fontSize: 16, color: 0x3c7a3e, hoverColor: 0x4c9a4e });
@@ -886,15 +1278,15 @@ const { width, height } = this.scale;
     const overlay = this.add.rectangle(width / 2, height / 2, width, height, 0x000000, 0.55).setInteractive().setScrollFactor(0);
     const panel = this.add.rectangle(width / 2, height / 2, 460, 240, 0xfff8e7, 1).setStrokeStyle(4, 0x9c3b2e);
     const title = this.add.text(width / 2, height / 2 - 80, 'Journal Page #3 Unlocked!', {
-      fontFamily: 'Georgia, serif', fontSize: 22, color: '#9c3b2e', fontStyle: 'bold'
+      fontFamily: '"Tildunk", Georgia, serif', fontSize: 22, color: '#9c3b2e', fontStyle: 'bold'
     }).setOrigin(0.5);
     const scoreTxt = this.add.text(width / 2, height / 2 - 34, `You remembered ${this.quizScore} / ${this.quizQuestions.length}.`, {
-      fontFamily: 'sans-serif', fontSize: 16, color: '#3b2410'
+      fontFamily: '"Tildunk", sans-serif', fontSize: 16, color: '#3b2410'
     }).setOrigin(0.5);
     const flavor = this.add.text(width / 2, height / 2, chapter4Ready
       ? 'Pateros in the Revolution — recorded in the journal. Chapter 4 awaits.'
       : 'Pateros in the Revolution — recorded in the journal. Chapter 4 is still being written — more adventures coming soon!', {
-      fontFamily: 'sans-serif', fontSize: 14, color: '#6b4a2f', align: 'center', wordWrap: { width: 380 }
+      fontFamily: '"Tildunk", sans-serif', fontSize: 14, color: '#6b4a2f', align: 'center', wordWrap: { width: 380 }
     }).setOrigin(0.5, 0);
 
     container.add([overlay, panel, title, scoreTxt, flavor]);
@@ -905,7 +1297,12 @@ const { width, height } = this.scale;
     container.add([rect, txt]);
   }
 
-  update() {
+  update(time, delta) {
+    if (this.mode === 'patrol') {
+      this.updatePatrol(time, delta);
+      return;
+    }
+
     // interaction prompt + key handling
     if (!this.locked && (this.mode === 'explore')) {
       const nearest = this.nearestInteractable();

@@ -3438,6 +3438,64 @@ function buildChapter1TileTypes(mapData) {
   return cfg;
 }
 
+// ==========================================================================
+// MINI-GAME 2 - Sagwan sa Ilog (River Run)
+// A lane-dash down the Aguho river to the embarcadero: steer the banca
+// between 3 channels to scoop up the goods that really left by boat,
+// leave household things alone, and dodge the driftwood/branches the
+// river throws in the way. Same "load vs keep" idea the old sorting
+// quiz used, just played out in real time instead of picked from a list.
+// ==========================================================================
+const CHAPTER1_RIVER_LANE_X = [-96, 0, 96]; // boat x-offsets from screen center: left / mid / right channel
+const CHAPTER1_RIVER_GOAL_DISTANCE = 2200; // "distance" travelled before the embarcadero comes into view - was 1000 (~11s); this runs ~24s at the same current speed
+const CHAPTER1_RIVER_SCROLL_SPEED = 90; // px/sec the current carries the boat forward (drives distance + bg scroll)
+const CHAPTER1_RIVER_ITEM_SPEED = 175; // px/sec items drift down toward the boat - faster than the current itself (was 150 - a bit less reaction time)
+const CHAPTER1_RIVER_START_LIVES = 3;
+const CHAPTER1_RIVER_SPAWN_MS = 700; // roughly how often a new item enters (was 850 - busier river now that the run is longer)
+
+// Correct catches - genuine embarcadero trade goods - add to the cargo tally.
+// Each has an `icon` texture key (see the preload note below) plus a `size`
+// to display it at; spawnRiverItem() falls back to the emoji if the icon
+// key isn't loaded for some reason.
+const CHAPTER1_RIVER_GOOD_ITEMS = [
+  { emoji: '🌾', label: 'rice for trade', icon: 'river_rice', size: [40, 50] },
+  { emoji: '🐟', label: 'dried fish', icon: 'river_fish', size: [36, 48] },
+  { emoji: '🧺', label: 'woven goods', icon: 'river_woven', size: [40, 42] }
+];
+// Wrong catches - household things that never left Aguho - cost a life.
+const CHAPTER1_RIVER_BAD_ITEMS = [
+  { emoji: '🐃', label: "the neighbor's carabao", icon: 'river_carabao', size: [46, 48] },
+  { emoji: '🍲', label: 'a family cooking pot', icon: 'river_pot', size: [38, 38] }
+];
+// Pure hazards - nothing to learn from these, just something to steer
+// around, same as real driftwood or a low agoho branch would be.
+const CHAPTER1_RIVER_HAZARDS = [
+  { emoji: '🪵', label: 'driftwood', icon: 'river_driftwood', size: [34, 52] },
+  { emoji: '🦆', label: 'a startled duck', icon: 'river_duck', size: [30, 38] }
+];
+
+// A brighter, daylight variant of mapLoader.js's drawWater. The shared
+// drawWater (also used for the actual river tiles on the explore map) reads
+// fine as a small background tile, but blown up full-bleed edge-to-edge for
+// an extended ~24s run it came across too dark/murky - so this mini-game
+// gets its own lighter palette instead of touching the shared drawer that
+// every other water tile in the game still relies on. Same wave-highlight
+// motif, just lighter blues throughout.
+function drawRiverRunWater(g, rand) {
+  g.fillStyle(0x4a90c4, 1).fillRect(0, 0, TILE_SIZE, TILE_SIZE);
+  g.fillStyle(0x3f7fb0, 0.45).fillRect(0, TILE_SIZE * 0.55, TILE_SIZE, TILE_SIZE * 0.45);
+  g.lineStyle(2, 0xb9e6fa, 0.65);
+  for (let i = 0; i < 2; i++) {
+    const y = 6 + rand() * (TILE_SIZE - 12);
+    g.beginPath();
+    g.moveTo(2, y);
+    g.lineTo(TILE_SIZE * 0.35, y + 3);
+    g.lineTo(TILE_SIZE * 0.65, y - 3);
+    g.lineTo(TILE_SIZE - 2, y);
+    g.strokePath();
+  }
+}
+
 class Chapter1Scene extends Phaser.Scene {
   constructor() {
     super('Chapter1');
@@ -3455,6 +3513,23 @@ class Chapter1Scene extends Phaser.Scene {
     this.load.image('quest_agoho', 'assets/icons/ch1-agoho-tree.png');
     this.load.image('quest_house', 'assets/icons/ch1-house.png');
     this.load.image('quest_trading_stall', 'assets/icons/ch1-trading-stall.png');
+
+    // River-run boat: Hiraya paddling, viewed from above - real art, 6-frame
+    // rowing loop. Falls back to quest_boat/emoji below (see launchRiverRun)
+    // if this hasn't been added yet, same graceful-fallback idea as the
+    // quest icons above.
+    this.load.spritesheet('hiraya_row', 'assets/icons/hiraya-row.png', { frameWidth: 152, frameHeight: 130 });
+
+    // River good/bad/hazard items - real art for all seven, top-down to
+    // match hiraya_row's camera angle. spawnRiverItem() falls back to each
+    // item's emoji if a given icon key isn't loaded for some reason.
+    this.load.image('river_rice', 'assets/icons/ch1-rice.png');
+    this.load.image('river_fish', 'assets/icons/ch1-dried-fish.png');
+    this.load.image('river_woven', 'assets/icons/ch1-woven-craft.png');
+    this.load.image('river_driftwood', 'assets/icons/ch1-driftwood.png');
+    this.load.image('river_duck', 'assets/icons/ch1-duck.png');
+    this.load.image('river_carabao', 'assets/icons/ch1-carabao.png');
+    this.load.image('river_pot', 'assets/icons/ch1-pot.png');
 
     Object.values(CHAPTER1_MAP_DATA.tileTypes).forEach(t => {
       if (t.imageKey) {
@@ -3478,7 +3553,7 @@ class Chapter1Scene extends Phaser.Scene {
     });
   }
 
-  create() {
+  create(data) {
     SoundManager.playMusic(this, 'bg-game');
     const { width, height } = this.scale;
     const character = 'hiraya';
@@ -3486,7 +3561,7 @@ class Chapter1Scene extends Phaser.Scene {
     this.prefix = character;
     this.speed = this.registry.get('playerSpeed') || 160;
     this.locked = false; // true during dialogue / popup / quiz - movement disabled
-    this.mode = 'intro'; // intro -> explore -> quiz -> done
+    this.mode = 'intro'; // intro -> explore -> transition -> riverrun -> transition -> quiz -> done
 
     // --- riverside map (loaded from the editor's exported JSON, see
     //     CHAPTER1_MAP_DATA above) ---
@@ -3542,14 +3617,14 @@ class Chapter1Scene extends Phaser.Scene {
      // Ensure Lola renders below player
      this.lola.setDepth(0);
     this.lolaPrompt = this.add.text(this.lola.x, this.lola.y - 90, '', {
-      fontFamily: 'sans-serif', fontSize: 13, color: '#fff8e7', backgroundColor: '#000000aa',
+      fontFamily: '"Tildunk", sans-serif', fontSize: 13, color: '#fff8e7', backgroundColor: '#000000aa',
       padding: { x: 6, y: 3 }
     }).setOrigin(0.5).setVisible(false);
     // Generic "near a river-life object" hint - repositioned each frame
     // above whichever quest object (boat/goods/agoho/house/stall) the
     // player is closest to.
     this.interactPrompt = this.add.text(0, 0, 'Press E to interact', {
-      fontFamily: 'sans-serif', fontSize: 13, color: '#fff8e7', backgroundColor: '#000000aa',
+      fontFamily: '"Tildunk", sans-serif', fontSize: 13, color: '#fff8e7', backgroundColor: '#000000aa',
       padding: { x: 6, y: 3 }
     }).setOrigin(0.5).setVisible(false).setDepth(100000);
     this.returnFlag = this.add.text(this.lola.x, this.lola.y - 60, '❗', { fontSize: 26 })
@@ -3584,7 +3659,7 @@ class Chapter1Scene extends Phaser.Scene {
       this.physics.add.existing(rect, true);
       this.questObstacles.push(rect);
       const check = this.add.text(o.x, o.y, '✓', {
-        fontFamily: 'sans-serif', fontSize: 22, color: '#3c7a3e', fontStyle: 'bold'
+        fontFamily: '"Tildunk", sans-serif', fontSize: 22, color: '#3c7a3e', fontStyle: 'bold'
       }).setOrigin(0.5).setVisible(false).setDepth(o.y + 1);
       o.found = false;
       o.rect = rect;
@@ -3625,42 +3700,45 @@ class Chapter1Scene extends Phaser.Scene {
     // of scrolling away with the map now that the camera follows the player)
     const displayName = character.charAt(0).toUpperCase() + character.slice(1);
     this.add.text(14, 12, displayName, {
-      fontFamily: 'Georgia, serif', fontSize: 18, color: '#fff8e7'
+      fontFamily: '"Tildunk", Georgia, serif', fontSize: 18, color: '#fff8e7'
     }).setShadow(1, 1, '#000000aa', 2, true, true).setScrollFactor(0).setDepth(900);
 
     this.add.text(width / 2, 16, 'Chapter 1: Aguho — The River Remembers', {
-      fontFamily: 'Georgia, serif', fontSize: 16, color: '#f5e2c8'
+      fontFamily: '"Tildunk", Georgia, serif', fontSize: 16, color: '#f5e2c8'
     }).setOrigin(0.5, 0).setScrollFactor(0).setDepth(900);
 
-    const taskBtn = createButton(this, width - 84, 27, 'Task', () => {
+    // Wooden-Gold UI icon pack - same plank button used for Start
+    // Adventure/Chapters on the Main Menu (see createWoodButton in ui.js),
+    // sized down to fit the gameplay HUD.
+    const taskBtn = createWoodButton(this, width - 84, 27, 'Task', () => {
       if (this.mode === 'explore' && !this.locked) {
         this.locked = true;
         this.showObjectivesModal();
       }
-    }, { width: 140, height: 30, fontSize: 13 });
-    this.taskBtnRect = taskBtn.rect.setScrollFactor(0).setDepth(900);
+    }, { width: 150, height: 40, fontSize: 15 });
+    this.taskBtnRect = taskBtn.image.setScrollFactor(0).setDepth(900);
     this.taskBtnTxt = taskBtn.txt.setScrollFactor(0).setDepth(901);
     this.taskBtnRect.setVisible(false);
     this.taskBtnTxt.setVisible(false);
     this.updateProgress();
 
-    const journalBtn = createButton(this, 66, height - 30, 'Journal', () => {
+    const journalBtn = createWoodButton(this, 66, height - 30, 'Journal', () => {
       if (this.mode === 'explore' && !this.locked) {
         this.locked = true;
         this.showJournalModal();
       }
-    }, { width: 110, height: 34, fontSize: 13 });
-    journalBtn.rect.setScrollFactor(0).setDepth(900);
+    }, { width: 130, height: 40, fontSize: 14 });
+    journalBtn.image.setScrollFactor(0).setDepth(900);
     journalBtn.txt.setScrollFactor(0).setDepth(901);
 
-    const menuBtn = createButton(this, width - 66, height - 30, 'Menu', () => {
+    const menuBtn = createWoodButton(this, width - 66, height - 30, 'Menu', () => {
       if (!this.locked) { this.locked = true; showPauseMenu(this); }
-    }, { width: 110, height: 34, fontSize: 13 });
-    menuBtn.rect.setScrollFactor(0).setDepth(900);
+    }, { width: 130, height: 40, fontSize: 14 });
+    menuBtn.image.setScrollFactor(0).setDepth(900);
     menuBtn.txt.setScrollFactor(0).setDepth(901);
 
     this.add.text(width / 2, height - 12, 'WASD to move · E to interact · Esc for menu', {
-      fontFamily: 'sans-serif', fontSize: 12, color: '#9aa0aa'
+      fontFamily: '"Tildunk", sans-serif', fontSize: 12, color: '#9aa0aa'
     }).setOrigin(0.5, 1).setScrollFactor(0).setDepth(900);
 
     // --- curtain-open reveal - opening dialogue waits for it to finish ---
@@ -3733,22 +3811,22 @@ showObjectivesModal() {
     const top = height / 2 - panelH / 2;
 
     const title = this.add.text(width / 2, top + 26, 'Objectives', {
-      fontFamily: 'Georgia, serif', fontSize: 20, color: '#9c3b2e', fontStyle: 'bold'
+      fontFamily: '"Tildunk", Georgia, serif', fontSize: 20, color: '#9c3b2e', fontStyle: 'bold'
     }).setOrigin(0.5);
     const allObjectsFound = this.objects.every(o => o.found);
     const subtitle = this.add.text(width / 2, top + 50,
       allObjectsFound ? 'All found — now report back to Lola:' : 'Find these around the riverside:', {
-      fontFamily: 'sans-serif', fontSize: 13, color: '#6b4a2f'
+      fontFamily: '"Tildunk", sans-serif', fontSize: 13, color: '#6b4a2f'
     }).setOrigin(0.5);
     const hint = this.add.text(width / 2, top + 70, 'Hover a found item to see what you learned', {
-      fontFamily: 'sans-serif', fontSize: 11, color: '#9aa0aa', fontStyle: 'italic'
+      fontFamily: '"Tildunk", sans-serif', fontSize: 11, color: '#9aa0aa', fontStyle: 'italic'
     }).setOrigin(0.5);
 
     container.add([overlay, panel, title, subtitle, hint]);
 
     // Shared tooltip element - one instance, repositioned/retexted per hover.
     const tooltipTxt = this.add.text(width / 2, top + headerH + tasks.length * rowH + 14, '', {
-      fontFamily: 'sans-serif', fontSize: 12, color: '#3b2410', align: 'center',
+      fontFamily: '"Tildunk", sans-serif', fontSize: 12, color: '#3b2410', align: 'center',
       wordWrap: { width: 330 }
     }).setOrigin(0.5, 0).setVisible(false);
     container.add(tooltipTxt);
@@ -3757,17 +3835,17 @@ showObjectivesModal() {
       const y = top + headerH + i * rowH;
       const found = o.found;
       const mark = this.add.text(width / 2 - 150, y, found ? '✓' : '—', {
-        fontFamily: 'sans-serif', fontSize: 16, fontStyle: 'bold',
+        fontFamily: '"Tildunk", sans-serif', fontSize: 16, fontStyle: 'bold',
         color: found ? '#3c7a3e' : '#9aa0aa'
       }).setOrigin(0, 0.5);
       const label = this.add.text(width / 2 - 122, y, o.type === 'task' ? o.name : `${o.name} x1`, {
-        fontFamily: 'sans-serif', fontSize: 15,
+        fontFamily: '"Tildunk", sans-serif', fontSize: 15,
         color: found ? '#3c7a3e' : '#3b2410'
       }).setOrigin(0, 0.5);
       const status = this.add.text(width / 2 + 150, y, found
         ? (o.type === 'task' ? 'Done' : 'Found')
         : (o.type === 'task' ? 'Go talk to her' : 'Not found'), {
-        fontFamily: 'sans-serif', fontSize: 11,
+        fontFamily: '"Tildunk", sans-serif', fontSize: 11,
         color: found ? '#3c7a3e' : '#9aa0aa'
       }).setOrigin(1, 0.5);
       container.add([mark, label, status]);
@@ -3810,7 +3888,7 @@ showJournalModal() {
     const top = height / 2 - panelH / 2;
 
     const title = this.add.text(width / 2, top + 28, "Lola's Journal", {
-      fontFamily: 'Georgia, serif', fontSize: 20, color: '#9c3b2e', fontStyle: 'bold'
+      fontFamily: '"Tildunk", Georgia, serif', fontSize: 20, color: '#9c3b2e', fontStyle: 'bold'
     }).setOrigin(0.5);
 
     container.add([overlay, panel, title]);
@@ -3819,16 +3897,16 @@ showJournalModal() {
       const unlocked = pages.includes(ch.id);
       const y = top + 62 + i * rowH;
       const mark = this.add.text(width / 2 - 198, y, unlocked ? '✓' : '🔒', {
-        fontFamily: 'sans-serif', fontSize: 15,
+        fontFamily: '"Tildunk", sans-serif', fontSize: 15,
         color: unlocked ? '#3c7a3e' : '#9aa0aa'
       }).setOrigin(0, 0.5);
       const label = this.add.text(width / 2 - 172, y, `Page ${ch.id}: ${ch.title}`, {
-        fontFamily: 'sans-serif', fontSize: 13,
+        fontFamily: '"Tildunk", sans-serif', fontSize: 13,
         color: unlocked ? '#3b2410' : '#9aa0aa',
         wordWrap: { width: 300 }
       }).setOrigin(0, 0.5);
       const status = this.add.text(width / 2 + 198, y, unlocked ? 'Unlocked' : 'Locked', {
-        fontFamily: 'sans-serif', fontSize: 11,
+        fontFamily: '"Tildunk", sans-serif', fontSize: 11,
         color: unlocked ? '#3c7a3e' : '#9aa0aa'
       }).setOrigin(1, 0.5);
       container.add([mark, label, status]);
@@ -3876,8 +3954,349 @@ showJournalModal() {
       'You found them all — the boat, the goods, the agoho tree, the house, and the trading stall by the embarcadero.',
       'This place used to be called Aguho, named after those very agoho trees along the riverbank.',
       'Boats loaded and unloaded goods right there at the embarcadero — that was everyday life for the people here.',
+      'One more thing before we\'re done — the boat\'s about to leave, and I could use another pair of hands rowing. Climb in with me.'
+    ], () => this.startRiverTransition(), ['lola-happy', 'lola-happy', 'lola-happy', 'lola-wink']);
+  }
+
+  // ==========================================================================
+  // MINI-GAME 2 - Sagwan sa Ilog (River Run) - see CHAPTER1_RIVER_* above
+  // ==========================================================================
+
+  // Curtain-close over the riverside, build the river minigame behind it,
+  // then curtain-open into it - the same close/build/open pairing the rest
+  // of the game uses for chapter-to-chapter transitions, just staying
+  // inside Chapter 1 so it reads as "stepping onto the boat" rather than a
+  // scene change.
+  startRiverTransition() {
+    this.mode = 'transition';
+    this.locked = true;
+    curtainClose(this, () => {
+      this.launchRiverRun();
+      curtainOpen(this, () => this.showRiverIntro());
+    });
+  }
+
+  showRiverIntro() {
+    showDialogue(this, 'Lola Nena', [
+      'Left and right to steer, three channels to choose from.',
+      'Rice, dried fish, woven goods — scoop those up, they\'re bound for trade. Leave anything from a household alone, and mind the driftwood.'
+    ], () => {
+      this.mode = 'riverrun';
+      this.startRiverSpawning();
+    }, ['lola-wink', 'lola-happy']);
+  }
+
+  // Builds the full-screen river: scrolling water, bank treeline, HUD, and
+  // the boat itself. Purely procedural (the same drawWater painter the map
+  // tiles use, plus emoji) so this never depends on art that hasn't been
+  // added to assets/ yet - same graceful-fallback idea as the 5 riverside
+  // quest icons above.
+  launchRiverRun() {
+    const { width, height } = this.scale;
+    this.riverLaneIndex = 1;
+    this.riverCargo = 0;
+    this.riverLives = CHAPTER1_RIVER_START_LIVES;
+    this.riverDistance = 0;
+    this.riverItems = [];
+
+    this.riverContainer = this.add.container(0, 0).setDepth(10500).setScrollFactor(0);
+
+    if (!this.textures.exists('riverrun_water_tile_bright')) {
+      const g = this.make.graphics({ x: 0, y: 0, add: false });
+      drawRiverRunWater(g, Math.random);
+      g.generateTexture('riverrun_water_tile_bright', 32, 32);
+      g.destroy();
+    }
+    this.riverWaterBg = this.add.tileSprite(width / 2, height / 2, width, height, 'riverrun_water_tile_bright').setScrollFactor(0);
+    this.riverContainer.add(this.riverWaterBg);
+
+    // Riverbank ground - tiled with the same grass art the main explore
+    // map uses (fieldsTile_38, already loaded in preload() for that map's
+    // grass tiles) instead of a flat dark rectangle, so the banks actually
+    // look like Aguho's fields rather than a plain dark-green block. Scrolls
+    // downward with the current in updateRiverRun(), same speed as the
+    // treeline below and the water above, so the banks read as moving past
+    // the boat rather than sitting frozen in place.
+    const bankW = Math.max(60, (width - 340) / 2);
+    const leftBank = this.add.tileSprite(bankW / 2, height / 2, bankW, height, 'fieldsTile_38').setScrollFactor(0);
+    const rightBank = this.add.tileSprite(width - bankW / 2, height / 2, bankW, height, 'fieldsTile_38').setScrollFactor(0);
+    this.riverBankGrass = [leftBank, rightBank];
+    this.riverContainer.add([leftBank, rightBank]);
+
+    this.riverTrees = [];
+    const treeMargin = 34; // keep trees off the bank's outer/inner edges (bumped up for the larger 2x trees below)
+    const treeXRange = Math.max(10, bankW - treeMargin * 2);
+    const randomTreeX = (side) => {
+      const centerX = side === 'left' ? bankW / 2 : width - bankW / 2;
+      return centerX - treeXRange / 2 + Math.random() * treeXRange;
+    };
+    const spawnTree = (side, y) => {
+      // Real agoho art if it's been added (quest_agoho, same key/file as the
+      // exploration-mode quest icon), a tree emoji otherwise. Sized 2x the
+      // original 34x36/26px so they actually read as trees against the
+      // now-visible grass banks instead of getting lost in it.
+      const x = randomTreeX(side);
+      const t = this.textures.exists('quest_agoho')
+        ? this.add.image(x, y, 'quest_agoho').setDisplaySize(68, 72).setScrollFactor(0)
+        : this.add.text(x, y, '\ud83c\udf33', { fontSize: 52 }).setOrigin(0.5).setScrollFactor(0);
+      this.riverContainer.add(t);
+      this.riverTrees.push({ obj: t, side });
+    };
+    // Seed both banks top-to-bottom (plus a bit above the top edge) with
+    // randomly-spaced trees so it doesn't read as an obvious repeating tile
+    // once it's scrolling. Gap range widened along with the tree size above
+    // so the bigger canopies don't crowd/overlap each other.
+    ['left', 'right'].forEach((side) => {
+      let y = -60;
+      while (y < height + 60) {
+        spawnTree(side, y);
+        y += Phaser.Math.Between(100, 160);
+      }
+    });
+
+    // Faint lane-divider guides between the 3 channels.
+    for (let i = 1; i < CHAPTER1_RIVER_LANE_X.length; i++) {
+      const lineX = width / 2 + (CHAPTER1_RIVER_LANE_X[i] + CHAPTER1_RIVER_LANE_X[i - 1]) / 2;
+      const line = this.add.rectangle(lineX, height / 2, 2, height, 0xffffff, 0.18).setScrollFactor(0);
+      this.riverContainer.add(line);
+    }
+
+    // --- HUD ---
+    this.riverTitleTxt = this.add.text(width / 2, 18, 'Sagwan sa Ilog — Paddle to the Embarcadero', {
+      fontFamily: '"Tildunk", Georgia, serif', fontSize: 16, color: '#fff8e7', backgroundColor: '#000000aa', padding: { x: 10, y: 4 }
+    }).setOrigin(0.5, 0).setScrollFactor(0);
+
+    const barW = 300, barH = 12, barY = 50;
+    this.riverProgressBg = this.add.rectangle(width / 2, barY, barW, barH, 0x000000, 0.5).setStrokeStyle(2, 0xf5e2c8).setScrollFactor(0);
+    this.riverProgressFill = this.add.rectangle(width / 2 - barW / 2, barY, 2, barH - 4, 0x3c7a3e, 1).setOrigin(0, 0.5).setScrollFactor(0);
+    this.riverBarW = barW;
+
+    this.riverCargoTxt = this.add.text(16, 16, 'Cargo: 0', {
+      fontFamily: '"Tildunk", sans-serif', fontSize: 15, color: '#fff8e7', backgroundColor: '#000000aa', padding: { x: 8, y: 4 }
+    }).setScrollFactor(0);
+    this.riverLivesTxt = this.add.text(width - 16, 16, '❤️❤️❤️', {
+      fontFamily: '"Tildunk", sans-serif', fontSize: 15, color: '#fff8e7', backgroundColor: '#000000aa', padding: { x: 8, y: 4 }
+    }).setOrigin(1, 0).setScrollFactor(0);
+
+    this.riverContainer.add([
+      this.riverProgressBg, this.riverProgressFill, this.riverTitleTxt, this.riverCargoTxt, this.riverLivesTxt
+    ]);
+
+    // The boat - Hiraya's rowing sheet if it's been added, quest_boat art if
+    // just that has, a canoe emoji if neither is available yet.
+    const boatX = width / 2 + CHAPTER1_RIVER_LANE_X[this.riverLaneIndex];
+    const boatY = height - 110;
+    if (this.textures.exists('hiraya_row')) {
+      if (!this.anims.exists('hiraya-row')) {
+        this.anims.create({
+          key: 'hiraya-row',
+          frames: this.anims.generateFrameNumbers('hiraya_row', { start: 0, end: 5 }),
+          frameRate: 8,
+          repeat: -1
+        });
+      }
+      this.riverBoat = this.add.sprite(boatX, boatY, 'hiraya_row', 0).setDisplaySize(90, 77).setScrollFactor(0);
+      this.riverBoat.play('hiraya-row');
+    } else if (this.textures.exists('quest_boat')) {
+      this.riverBoat = this.add.image(boatX, boatY, 'quest_boat').setDisplaySize(72, 76).setScrollFactor(0);
+    } else {
+      this.riverBoat = this.add.text(boatX, boatY, '🛶', { fontSize: 46 }).setOrigin(0.5).setScrollFactor(0);
+    }
+    this.riverContainer.add(this.riverBoat);
+  }
+
+  startRiverSpawning() {
+    this.riverSpawnTimer = this.time.addEvent({
+      delay: CHAPTER1_RIVER_SPAWN_MS,
+      callback: this.spawnRiverItem,
+      callbackScope: this,
+      loop: true
+    });
+    this.spawnRiverItem(); // seed one right away so the river doesn't feel empty
+  }
+
+  spawnRiverItem() {
+    if (this.mode !== 'riverrun') return;
+    const { width } = this.scale;
+    const roll = Math.random();
+    let pool, type;
+    if (roll < 0.5) { pool = CHAPTER1_RIVER_GOOD_ITEMS; type = 'good'; } // was 0.55 - slightly fewer easy catches
+    else if (roll < 0.74) { pool = CHAPTER1_RIVER_BAD_ITEMS; type = 'bad'; } // was 0.8
+    else { pool = CHAPTER1_RIVER_HAZARDS; type = 'hazard'; } // was 0.2 share of rolls, now ~0.26 - more to dodge
+    const data = Phaser.Utils.Array.GetRandom(pool);
+    const lane = Phaser.Math.Between(0, CHAPTER1_RIVER_LANE_X.length - 1);
+    const x = width / 2 + CHAPTER1_RIVER_LANE_X[lane];
+    let obj;
+    if (data.icon && this.textures.exists(data.icon)) {
+      const [w, h] = data.size || [36, 36];
+      obj = this.add.image(x, -30, data.icon).setDisplaySize(w, h).setScrollFactor(0);
+    } else {
+      obj = this.add.text(x, -30, data.emoji, { fontSize: 32 }).setOrigin(0.5).setScrollFactor(0);
+    }
+    this.riverContainer.add(obj);
+    this.riverItems.push({ obj, lane, type, data, caught: false });
+  }
+
+  shiftRiverLane(delta) {
+    const next = Phaser.Math.Clamp(this.riverLaneIndex + delta, 0, CHAPTER1_RIVER_LANE_X.length - 1);
+    if (next === this.riverLaneIndex) return;
+    this.riverLaneIndex = next;
+    const targetX = this.scale.width / 2 + CHAPTER1_RIVER_LANE_X[next];
+    this.tweens.add({ targets: this.riverBoat, x: targetX, duration: 130, ease: 'Sine.easeOut' });
+  }
+
+  // Small floating toast above the boat - "+1 rice for trade" / "not cargo"
+  // feedback in real time, instead of a click-through explanation panel.
+  showRiverToast(text, colorCss) {
+    const toast = this.add.text(this.riverBoat.x, this.riverBoat.y - 44, text, {
+      fontFamily: '"Tildunk", sans-serif', fontSize: 13, fontStyle: 'bold', color: colorCss,
+      backgroundColor: '#fff8e7', padding: { x: 6, y: 3 }
+    }).setOrigin(0.5).setScrollFactor(0);
+    this.riverContainer.add(toast);
+    this.tweens.add({
+      targets: toast, y: toast.y - 26, alpha: 0, duration: 650, ease: 'Cubic.easeOut',
+      onComplete: () => toast.destroy()
+    });
+  }
+
+  updateRiverHud() {
+    this.riverCargoTxt.setText(`Cargo: ${this.riverCargo}`);
+    this.riverLivesTxt.setText('❤️'.repeat(Math.max(0, this.riverLives)));
+    const pct = Phaser.Math.Clamp(this.riverDistance / CHAPTER1_RIVER_GOAL_DISTANCE, 0, 1);
+    this.riverProgressFill.width = Math.max(2, this.riverBarW * pct);
+  }
+
+  handleRiverCatch(item) {
+    if (item.type === 'good') {
+      this.riverCargo++;
+      SoundManager.play(this, 'correct');
+      this.showRiverToast(`+1 ${item.data.label}`, '#3c7a3e');
+    } else {
+      this.riverLives--;
+      SoundManager.play(this, 'incorrect');
+      const msg = item.type === 'bad' ? `Not cargo — ${item.data.label}` : `Watch out — ${item.data.label}!`;
+      this.showRiverToast(msg, '#9c3b2e');
+      this.cameras.main.shake(120, 0.004);
+    }
+    this.updateRiverHud();
+    if (this.riverLives <= 0) this.finishRiverRun();
+  }
+
+  updateRiverRun(time, delta) {
+    if (Phaser.Input.Keyboard.JustDown(this.keys.left) || Phaser.Input.Keyboard.JustDown(this.cursors.left)) {
+      this.shiftRiverLane(-1);
+    }
+    if (Phaser.Input.Keyboard.JustDown(this.keys.right) || Phaser.Input.Keyboard.JustDown(this.cursors.right)) {
+      this.shiftRiverLane(1);
+    }
+
+    this.riverWaterBg.tilePositionY -= CHAPTER1_RIVER_SCROLL_SPEED * (delta / 1000);
+    this.riverBankGrass.forEach(b => { b.tilePositionY -= CHAPTER1_RIVER_SCROLL_SPEED * (delta / 1000); });
+    this.riverDistance += CHAPTER1_RIVER_SCROLL_SPEED * (delta / 1000);
+    this.updateRiverHud();
+
+    // Scroll the treeline down at the same speed as the water/current so
+    // the banks actually read as passing by. Once a tree drifts off the
+    // bottom, recycle it back above the topmost tree on its own side (with
+    // a fresh random gap + x) instead of destroying/recreating it.
+    const treeScroll = CHAPTER1_RIVER_SCROLL_SPEED * (delta / 1000);
+    ['left', 'right'].forEach((side) => {
+      const sideTrees = this.riverTrees.filter(t => t.side === side);
+      let minY = Infinity;
+      sideTrees.forEach(t => {
+        t.obj.y += treeScroll;
+        if (t.obj.y < minY) minY = t.obj.y;
+      });
+      sideTrees.forEach(t => {
+        if (t.obj.y > this.scale.height + 60) {
+          minY -= Phaser.Math.Between(100, 160);
+          t.obj.y = minY;
+          const bankW = Math.max(60, (this.scale.width - 340) / 2);
+          const treeMargin = 34;
+          const treeXRange = Math.max(10, bankW - treeMargin * 2);
+          const centerX = side === 'left' ? bankW / 2 : this.scale.width - bankW / 2;
+          t.obj.x = centerX - treeXRange / 2 + Math.random() * treeXRange;
+        }
+      });
+    });
+
+    const boatY = this.riverBoat.y;
+    const catchWindow = 34;
+    for (let i = this.riverItems.length - 1; i >= 0; i--) {
+      const item = this.riverItems[i];
+      item.obj.y += CHAPTER1_RIVER_ITEM_SPEED * (delta / 1000);
+      if (!item.caught && item.lane === this.riverLaneIndex && Math.abs(item.obj.y - boatY) < catchWindow) {
+        item.caught = true;
+        item.obj.destroy();
+        this.riverItems.splice(i, 1);
+        this.handleRiverCatch(item);
+        if (this.mode !== 'riverrun') return; // handleRiverCatch may have just ended the run
+        continue;
+      }
+      if (item.obj.y > this.scale.height + 40) {
+        item.obj.destroy();
+        this.riverItems.splice(i, 1);
+      }
+    }
+
+    if (this.riverDistance >= CHAPTER1_RIVER_GOAL_DISTANCE) this.finishRiverRun();
+  }
+
+  finishRiverRun() {
+    if (this.mode !== 'riverrun') return; // guard against double-triggering (last life + goal reached same frame)
+    const reachedGoal = this.riverDistance >= CHAPTER1_RIVER_GOAL_DISTANCE;
+    this.mode = 'transition';
+    this.locked = true;
+    if (this.riverSpawnTimer) { this.riverSpawnTimer.remove(); this.riverSpawnTimer = null; }
+    this.riverItems.forEach(it => it.obj.destroy());
+    this.riverItems = [];
+    SoundManager.play(this, reachedGoal ? 'complete' : 'incorrect');
+    curtainClose(this, () => {
+      if (this.riverContainer) { this.riverContainer.destroy(); this.riverContainer = null; }
+      this.riverTrees = [];
+      curtainOpen(this, () => {
+        if (reachedGoal) this.showRiverRecap();
+        else this.showRiverFailRetry();
+      });
+    });
+  }
+
+  showRiverRecap() {
+    const loads = `${this.riverCargo} load${this.riverCargo === 1 ? '' : 's'}`;
+    this.locked = true;
+    showDialogue(this, 'Lola Nena', [
+      `We made it to the embarcadero — and you brought in ${loads} of good trade cargo along the way.`,
+      'That\'s the embarcadero for you — rice, dried fish, woven goods, all of it moving by boat, day after day.',
       'Let\'s see what you remember.'
-    ], () => this.startQuiz(), ['lola-happy', 'lola-happy', 'lola-happy', 'lola-wink']);
+    ], () => this.startQuiz(), ['lola-happy', 'lola-happy', 'lola-wink']);
+  }
+
+  // The banca capsized (3 bad catches/hazards) before reaching the
+  // embarcadero - Lola Nena talks it over, then it's straight back into a
+  // fresh run instead of quietly waving the miss through, so reaching the
+  // embarcadero actually has to happen rather than just being one of two
+  // flavor-text outcomes.
+  showRiverFailRetry() {
+    this.locked = true;
+    showDialogue(this, 'Lola Nena', [
+      'Easy now — the banca took on too much before we ever reached the embarcadero.',
+      'No harm done. Climb back in, we\'ll paddle that stretch again.'
+    ], () => this.retryRiverRun(), ['lola-wave', 'lola-wink']);
+  }
+
+  // Same close/build/open pairing startRiverTransition() uses, just
+  // skipping straight back into play instead of replaying the full
+  // steer-and-sort instructions a second time.
+  retryRiverRun() {
+    this.mode = 'transition';
+    this.locked = true;
+    curtainClose(this, () => {
+      this.launchRiverRun();
+      curtainOpen(this, () => {
+        this.mode = 'riverrun';
+        this.startRiverSpawning();
+      });
+    });
   }
 
   interactWithObject(o) {
@@ -3905,19 +4324,19 @@ showJournalModal() {
     this.quizQuestions = [
       {
         q: 'What was Pateros historically called?',
-        options: ['Aguho', 'Manila', 'Taguig', 'Makati'],
+        options: ['Aguho', 'Poblacion', 'Santa Ana', 'Tabacalera'],
         correct: 0,
-        explanation: 'Pateros was historically known as "Aguho," named after the agoho trees that once lined the riverside.'
+        explanation: 'Pateros was historically known as "Aguho," named after the agoho trees that once lined the riverside. Poblacion, Santa Ana, and Tabacalera are barangays within present-day Pateros, not the old name of the town itself.'
       },
       {
         q: 'Agoho trees were associated with what?',
-        options: ['The name "Aguho"', 'A type of boat', 'A Spanish general', 'The town fiesta'],
+        options: ['The old name "Aguho"', 'A type of trading boat', 'The town\'s patron saint', 'A Spanish colonial title'],
         correct: 0,
         explanation: 'The agoho trees growing along the river gave the area its old name, "Aguho."'
       },
       {
         q: 'What happened at the embarcadero?',
-        options: ['Boats loaded and unloaded goods', 'Rice was planted', 'Church mass was held', 'Ducks were raised'],
+        options: ['Boats loaded and unloaded goods', 'Ducks were herded to market', 'The town council held session', 'Balut vendors set up their stalls'],
         correct: 0,
         explanation: 'The embarcadero was the riverside landing point where boats loaded and unloaded goods for trade.'
       }
@@ -3932,11 +4351,15 @@ showQuizQuestion() {
 
     const overlay = this.add.rectangle(width / 2, height / 2, width, height, 0x000000, 0.45).setInteractive().setScrollFactor(0);
     const panel = this.add.rectangle(width / 2, height / 2, 540, 380, 0xfff8e7, 1).setStrokeStyle(4, 0x9c3b2e);
+    // Kept so showQuizFeedback() can grow the panel downward if a long
+    // explanation wraps to more lines than the base 380px height allows for.
+    this.quizPanel = panel;
+    this.quizPanelTop = panel.y - panel.height / 2;
     const qNum = this.add.text(width / 2, height / 2 - 164, `Question ${this.quizIndex + 1} / ${this.quizQuestions.length}`, {
-      fontFamily: 'sans-serif', fontSize: 13, color: '#9c3b2e'
+      fontFamily: '"Tildunk", sans-serif', fontSize: 13, color: '#9c3b2e'
     }).setOrigin(0.5);
     const qText = this.add.text(width / 2, height / 2 - 138, qData.q, {
-      fontFamily: 'Georgia, serif', fontSize: 19, color: '#3b2410', align: 'center',
+      fontFamily: '"Tildunk", Georgia, serif', fontSize: 19, color: '#3b2410', align: 'center',
       wordWrap: { width: 460 }
     }).setOrigin(0.5, 0);
 
@@ -3972,17 +4395,33 @@ showQuizQuestion() {
 
     const { width, height } = this.scale;
     const verdict = this.add.text(width / 2, height / 2 + 96, isCorrect ? 'Correct!' : 'Not quite.', {
-      fontFamily: 'Georgia, serif', fontSize: 17, fontStyle: 'bold',
+      fontFamily: '"Tildunk", Georgia, serif', fontSize: 17, fontStyle: 'bold',
       color: isCorrect ? '#3c7a3e' : '#9c3b2e'
     }).setOrigin(0.5);
     const explanationTxt = this.add.text(width / 2, height / 2 + 118, qData.explanation || '', {
-      fontFamily: 'sans-serif', fontSize: 13, color: '#3b2410', align: 'center',
+      fontFamily: '"Tildunk", sans-serif', fontSize: 13, color: '#3b2410', align: 'center',
       wordWrap: { width: 460 }
     }).setOrigin(0.5, 0);
 
     container.add([verdict, explanationTxt]);
 
-    const { rect, txt } = createButton(this, width / 2, height / 2 + 170, 'Continue', () => {
+    // Continue sits below wherever the explanation text actually ends -
+    // longer explanations (or a wider font) can wrap to 3 lines instead of
+    // 2, and a fixed offset here let the button overlap the last line.
+    const continueY = explanationTxt.y + explanationTxt.height + 24;
+
+    // If that pushes the button past the panel's original bottom edge,
+    // grow the panel downward (top edge stays put) so the button - and the
+    // last line of explanation text - stay inside the cream box instead of
+    // spilling past its border.
+    const requiredBottom = continueY + 20 + 16;
+    if (this.quizPanel && requiredBottom > this.quizPanel.y + this.quizPanel.height / 2) {
+      const newHeight = requiredBottom - this.quizPanelTop;
+      this.quizPanel.setSize(540, newHeight);
+      this.quizPanel.y = this.quizPanelTop + newHeight / 2;
+    }
+
+    const { rect, txt } = createButton(this, width / 2, continueY, 'Continue', () => {
       container.destroy();
       this.answerQuiz(isCorrect);
     }, { width: 160, height: 40, fontSize: 16, color: 0x3c7a3e, hoverColor: 0x4c9a4e });
@@ -4025,13 +4464,13 @@ finishChapter() {
     const overlay = this.add.rectangle(width / 2, height / 2, width, height, 0x000000, 0.55).setInteractive().setScrollFactor(0);
     const panel = this.add.rectangle(width / 2, height / 2, 460, 240, 0xfff8e7, 1).setStrokeStyle(4, 0x9c3b2e);
     const title = this.add.text(width / 2, height / 2 - 80, 'Journal Page #1 Unlocked!', {
-      fontFamily: 'Georgia, serif', fontSize: 22, color: '#9c3b2e', fontStyle: 'bold'
+      fontFamily: '"Tildunk", Georgia, serif', fontSize: 22, color: '#9c3b2e', fontStyle: 'bold'
     }).setOrigin(0.5);
     const scoreTxt = this.add.text(width / 2, height / 2 - 34, `You remembered ${this.quizScore} / ${this.quizQuestions.length}.`, {
-      fontFamily: 'sans-serif', fontSize: 16, color: '#3b2410'
+      fontFamily: '"Tildunk", sans-serif', fontSize: 16, color: '#3b2410'
     }).setOrigin(0.5);
     const flavor = this.add.text(width / 2, height / 2, 'Aguho: The River Remembers — recorded in the journal.', {
-      fontFamily: 'sans-serif', fontSize: 14, color: '#6b4a2f', align: 'center', wordWrap: { width: 380 }
+      fontFamily: '"Tildunk", sans-serif', fontSize: 14, color: '#6b4a2f', align: 'center', wordWrap: { width: 380 }
     }).setOrigin(0.5, 0);
 
     container.add([overlay, panel, title, scoreTxt, flavor]);
@@ -4045,7 +4484,12 @@ finishChapter() {
     container.add([rect, txt]);
   }
 
-  update() {
+  update(time, delta) {
+    if (this.mode === 'riverrun') {
+      this.updateRiverRun(time, delta);
+      return;
+    }
+
     // interaction prompt + key handling
     if (!this.locked && (this.mode === 'explore')) {
       const nearest = this.nearestInteractable();

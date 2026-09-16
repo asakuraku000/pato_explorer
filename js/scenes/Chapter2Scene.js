@@ -105,6 +105,49 @@ const CHAPTER2_PLOT_DATA = [
   }
 ];
 
+// ==========================================================================
+// MINI-GAME 2 - Town Council
+// Same "read a short scenario, pick one of two options" shape as the
+// dilemmas in this chapter's own quiz, just played out as council
+// decisions instead of after-the-fact questions.
+// ==========================================================================
+const CHAPTER2_COUNCIL = [
+  {
+    situation: 'Families are settling farther from the plaza as the town grows. Where should new roads go first?',
+    options: [
+      { key: 'wise', label: 'Connect outlying households to the center' },
+      { key: 'unwise', label: 'Only pave roads right around the hall' }
+    ],
+    correct: 'wise',
+    explanation: 'As Pateros grew from a small community into a municipality, reaching outlying households mattered as much as the center itself.'
+  },
+  {
+    situation: 'A newcomer wants to set up a stall in the middle of the road, since it gets the most foot traffic.',
+    options: [
+      { key: 'wise', label: 'Direct them to the market near the road instead' },
+      { key: 'unwise', label: 'Allow it and let the road get blocked' }
+    ],
+    correct: 'wise',
+    explanation: 'The market sat near the road precisely so trade had a proper place — letting stalls block the road serves no one for long.'
+  },
+  {
+    situation: 'Two families both believe they were promised the same plot near the plaza.',
+    options: [
+      { key: 'wise', label: "Have the council record land agreements formally" },
+      { key: 'unwise', label: 'Let whoever built first keep it, no record kept' }
+    ],
+    correct: 'wise',
+    explanation: 'Formal records helped a growing municipality settle disputes fairly as more families arrived.'
+  }
+];
+
+// "Take Your Stand" tuning - see startTownCouncil() and friends below. Kept
+// as named constants (same convention as CHAPTER1_RIVER_* / CHAPTER4_DUCK_*)
+// so the feel of the round can be tuned in one place.
+const CHAPTER2_COUNCIL_ROUND_MS = 9000;   // time to reach a zone before it counts as a timeout
+const CHAPTER2_COUNCIL_TOKEN_SPEED = 240; // px/sec the player's stand-in runs at
+const CHAPTER2_COUNCIL_ZONE_RADIUS = 78;  // how close counts as "standing in" a zone
+
 class Chapter2Scene extends Phaser.Scene {
   constructor() {
     super('Chapter2');
@@ -122,7 +165,7 @@ class Chapter2Scene extends Phaser.Scene {
     this.load.image(CHAPTER2_BUILT_ICONS.road.key, 'assets/icons/ch2-road.png');
   }
 
-  create() {
+  create(data) {
     SoundManager.playMusic(this, 'bg-game');
     const { width, height } = this.scale;
     const character = this.registry.get('selectedCharacter') || 'hiraya';
@@ -181,13 +224,13 @@ class Chapter2Scene extends Phaser.Scene {
      // Ensure Don Emilio renders below player
      this.donEmilio.setDepth(0);
     this.interactPrompt = this.add.text(this.donEmilio.x, this.donEmilio.y - 90, '', {
-      fontFamily: 'sans-serif', fontSize: 13, color: '#fff8e7', backgroundColor: '#000000aa',
+      fontFamily: '"Tildunk", sans-serif', fontSize: 13, color: '#fff8e7', backgroundColor: '#000000aa',
       padding: { x: 6, y: 3 }
     }).setOrigin(0.5).setVisible(false);
     // Generic "near a plot" hint - repositioned each frame above whichever
     // plot the player is closest to (see this.plots below / update()).
     this.plotPrompt = this.add.text(0, 0, 'Press E to interact', {
-      fontFamily: 'sans-serif', fontSize: 13, color: '#fff8e7', backgroundColor: '#000000aa',
+      fontFamily: '"Tildunk", sans-serif', fontSize: 13, color: '#fff8e7', backgroundColor: '#000000aa',
       padding: { x: 6, y: 3 }
     }).setOrigin(0.5).setVisible(false).setDepth(100000);
     this.returnFlag = this.add.text(this.donEmilio.x, this.donEmilio.y - 60, '❗', { fontSize: 26 })
@@ -218,10 +261,10 @@ class Chapter2Scene extends Phaser.Scene {
       this.physics.add.existing(p.rect, true);
       this.plotObstacles.push(p.rect);
       p.mark = this.add.text(p.x, p.y, '?', {
-        fontFamily: 'sans-serif', fontSize: 22, color: '#fff8e7', fontStyle: 'bold'
+        fontFamily: '"Tildunk", sans-serif', fontSize: 22, color: '#fff8e7', fontStyle: 'bold'
       }).setOrigin(0.5);
       p.check = this.add.text(p.x, p.y, '✓', {
-        fontFamily: 'sans-serif', fontSize: 22, color: '#ffffff', fontStyle: 'bold'
+        fontFamily: '"Tildunk", sans-serif', fontSize: 22, color: '#ffffff', fontStyle: 'bold'
       }).setOrigin(0.5).setVisible(false);
     });
     this.physics.add.collider(this.player, this.plotObstacles);
@@ -234,42 +277,45 @@ class Chapter2Scene extends Phaser.Scene {
     // of scrolling away with the map now that the camera follows the player)
     const displayName = character.charAt(0).toUpperCase() + character.slice(1);
     this.add.text(14, 12, displayName, {
-      fontFamily: 'Georgia, serif', fontSize: 18, color: '#fff8e7'
+      fontFamily: '"Tildunk", Georgia, serif', fontSize: 18, color: '#fff8e7'
     }).setShadow(1, 1, '#000000aa', 2, true, true).setScrollFactor(0).setDepth(900);
 
     this.add.text(width / 2, 16, 'Chapter 2: The Birth of a Municipality', {
-      fontFamily: 'Georgia, serif', fontSize: 16, color: '#f5e2c8'
+      fontFamily: '"Tildunk", Georgia, serif', fontSize: 16, color: '#f5e2c8'
     }).setOrigin(0.5, 0).setShadow(1, 1, '#000000aa', 2, true, true).setScrollFactor(0).setDepth(900);
 
-    const taskBtn = createButton(this, width - 84, 27, 'Task', () => {
+    // Wooden-Gold UI icon pack - same plank button used for Start
+    // Adventure/Chapters on the Main Menu (see createWoodButton in ui.js),
+    // sized down to fit the gameplay HUD.
+    const taskBtn = createWoodButton(this, width - 84, 27, 'Task', () => {
       if (this.mode === 'explore' && !this.locked) {
         this.locked = true;
         this.showObjectivesModal();
       }
-    }, { width: 140, height: 30, fontSize: 13 });
-    this.taskBtnRect = taskBtn.rect.setScrollFactor(0).setDepth(900);
+    }, { width: 150, height: 40, fontSize: 15 });
+    this.taskBtnRect = taskBtn.image.setScrollFactor(0).setDepth(900);
     this.taskBtnTxt = taskBtn.txt.setScrollFactor(0).setDepth(901);
     this.taskBtnRect.setVisible(false);
     this.taskBtnTxt.setVisible(false);
     this.updateProgress();
 
-    const journalBtn = createButton(this, 66, height - 30, 'Journal', () => {
+    const journalBtn = createWoodButton(this, 66, height - 30, 'Journal', () => {
       if (this.mode === 'explore' && !this.locked) {
         this.locked = true;
         this.showJournalModal();
       }
-    }, { width: 110, height: 34, fontSize: 13 });
-    journalBtn.rect.setScrollFactor(0).setDepth(900);
+    }, { width: 130, height: 40, fontSize: 14 });
+    journalBtn.image.setScrollFactor(0).setDepth(900);
     journalBtn.txt.setScrollFactor(0).setDepth(901);
 
-    const menuBtn = createButton(this, width - 66, height - 30, 'Menu', () => {
+    const menuBtn = createWoodButton(this, width - 66, height - 30, 'Menu', () => {
       if (!this.locked) { this.locked = true; showPauseMenu(this); }
-    }, { width: 110, height: 34, fontSize: 13 });
-    menuBtn.rect.setScrollFactor(0).setDepth(900);
+    }, { width: 130, height: 40, fontSize: 14 });
+    menuBtn.image.setScrollFactor(0).setDepth(900);
     menuBtn.txt.setScrollFactor(0).setDepth(901);
 
     this.add.text(width / 2, height - 12, 'WASD to move · E to interact · Esc for menu', {
-      fontFamily: 'sans-serif', fontSize: 12, color: '#9aa0aa'
+      fontFamily: '"Tildunk", sans-serif', fontSize: 12, color: '#9aa0aa'
     }).setOrigin(0.5, 1).setScrollFactor(0).setDepth(900);
 
     // --- curtain-open reveal - opening dialogue waits for it to finish ---
@@ -342,22 +388,22 @@ showObjectivesModal() {
     const top = height / 2 - panelH / 2;
 
     const title = this.add.text(width / 2, top + 26, 'Objectives', {
-      fontFamily: 'Georgia, serif', fontSize: 20, color: '#9c3b2e', fontStyle: 'bold'
+      fontFamily: '"Tildunk", Georgia, serif', fontSize: 20, color: '#9c3b2e', fontStyle: 'bold'
     }).setOrigin(0.5);
     const allPlotsBuilt = this.plots.every(p => p.built);
     const subtitle = this.add.text(width / 2, top + 50,
       allPlotsBuilt ? 'All built — now report back to Don Emilio:' : 'Figure out where each of these belongs:', {
-      fontFamily: 'sans-serif', fontSize: 13, color: '#6b4a2f'
+      fontFamily: '"Tildunk", sans-serif', fontSize: 13, color: '#6b4a2f'
     }).setOrigin(0.5);
     const hint = this.add.text(width / 2, top + 70, 'Hover a built item to see what you learned', {
-      fontFamily: 'sans-serif', fontSize: 11, color: '#9aa0aa', fontStyle: 'italic'
+      fontFamily: '"Tildunk", sans-serif', fontSize: 11, color: '#9aa0aa', fontStyle: 'italic'
     }).setOrigin(0.5);
 
     container.add([overlay, panel, title, subtitle, hint]);
 
     // Shared tooltip element - one instance, repositioned/retexted per hover.
     const tooltipTxt = this.add.text(width / 2, top + headerH + tasks.length * rowH + 14, '', {
-      fontFamily: 'sans-serif', fontSize: 12, color: '#3b2410', align: 'center',
+      fontFamily: '"Tildunk", sans-serif', fontSize: 12, color: '#3b2410', align: 'center',
       wordWrap: { width: 330 }
     }).setOrigin(0.5, 0).setVisible(false);
     container.add(tooltipTxt);
@@ -366,17 +412,17 @@ showObjectivesModal() {
       const y = top + headerH + i * rowH;
       const found = t.found;
       const mark = this.add.text(width / 2 - 150, y, found ? '✓' : '—', {
-        fontFamily: 'sans-serif', fontSize: 16, fontStyle: 'bold',
+        fontFamily: '"Tildunk", sans-serif', fontSize: 16, fontStyle: 'bold',
         color: found ? '#3c7a3e' : '#9aa0aa'
       }).setOrigin(0, 0.5);
       const label = this.add.text(width / 2 - 122, y, t.type === 'task' ? t.name : `${t.name} x1`, {
-        fontFamily: 'sans-serif', fontSize: 15,
+        fontFamily: '"Tildunk", sans-serif', fontSize: 15,
         color: found ? '#3c7a3e' : '#3b2410'
       }).setOrigin(0, 0.5);
       const status = this.add.text(width / 2 + 150, y, found
         ? (t.type === 'task' ? 'Done' : 'Built')
         : (t.type === 'task' ? 'Go talk to him' : 'Not placed'), {
-        fontFamily: 'sans-serif', fontSize: 11,
+        fontFamily: '"Tildunk", sans-serif', fontSize: 11,
         color: found ? '#3c7a3e' : '#9aa0aa'
       }).setOrigin(1, 0.5);
       container.add([mark, label, status]);
@@ -420,7 +466,7 @@ showJournalModal() {
     const top = height / 2 - panelH / 2;
 
     const title = this.add.text(width / 2, top + 28, "Lola's Journal", {
-      fontFamily: 'Georgia, serif', fontSize: 20, color: '#9c3b2e', fontStyle: 'bold'
+      fontFamily: '"Tildunk", Georgia, serif', fontSize: 20, color: '#9c3b2e', fontStyle: 'bold'
     }).setOrigin(0.5);
 
     container.add([overlay, panel, title]);
@@ -429,16 +475,16 @@ showJournalModal() {
       const unlocked = pages.includes(ch.id);
       const y = top + 62 + i * rowH;
       const mark = this.add.text(width / 2 - 198, y, unlocked ? '✓' : '🔒', {
-        fontFamily: 'sans-serif', fontSize: 15,
+        fontFamily: '"Tildunk", sans-serif', fontSize: 15,
         color: unlocked ? '#3c7a3e' : '#9aa0aa'
       }).setOrigin(0, 0.5);
       const label = this.add.text(width / 2 - 172, y, `Page ${ch.id}: ${ch.title}`, {
-        fontFamily: 'sans-serif', fontSize: 13,
+        fontFamily: '"Tildunk", sans-serif', fontSize: 13,
         color: unlocked ? '#3b2410' : '#9aa0aa',
         wordWrap: { width: 300 }
       }).setOrigin(0, 0.5);
       const status = this.add.text(width / 2 + 198, y, unlocked ? 'Unlocked' : 'Locked', {
-        fontFamily: 'sans-serif', fontSize: 11,
+        fontFamily: '"Tildunk", sans-serif', fontSize: 11,
         color: unlocked ? '#3c7a3e' : '#9aa0aa'
       }).setOrigin(1, 0.5);
       container.add([mark, label, status]);
@@ -484,8 +530,286 @@ showJournalModal() {
     showDialogue(this, 'Don Emilio', [
       'Look at that — a market by the road, a municipal hall at the center, houses spreading outward.',
       'Remember: in 1700, Pateros was declared a municipality. This is how a real town took shape around that — piece by piece, always around its people.',
+      'Placing the buildings was only half of it, though. Sit with me a moment — a council has decisions to make too.'
+    ], () => this.startTownCouncil(), ['don-emilio-happy', 'don-emilio-explain', 'don-emilio-point']);
+  }
+
+  // ==========================================================================
+  // MINI-GAME 2 - Town Council: "Take Your Stand" (see CHAPTER2_COUNCIL above
+  // for the situations/options/explanations - only *how* you answer changed).
+  // Instead of clicking a button, each round opens an assembly floor with two
+  // glowing zones (one per option) and a shrinking timer. The real player is
+  // hidden and a free-moving "stand-in" token takes their place on the floor -
+  // WASD/arrows to run, same keys already set up in create(). Stepping into a
+  // zone casts that vote immediately; running out of time counts as no vote.
+  // Entirely a screen-pinned overlay (scrollFactor 0 throughout), the same
+  // technique CHAPTER1_RIVER_* uses for the river-run minigame, so it doesn't
+  // need to touch the real tile map or the player's physics body at all.
+  // ==========================================================================
+  startTownCouncil() {
+    this.mode = 'towncouncil';
+    this.councilIndex = 0;
+    this.councilScore = 0;
+    this.locked = true;
+    this.player.setVisible(false); // the token stands in for them on the floor
+    showDialogue(this, 'Don Emilio', [
+      "One more thing before we're done - a council doesn't just build, it decides.",
+      "I'll lay out a situation. Two ways to answer will open up on the floor - run to the one you believe is wiser before the moment passes."
+    ], () => this.buildCouncilFloor(), ['don-emilio-explain', 'don-emilio-point']);
+  }
+
+  // Builds the persistent overlay (floor, audience, HUD) once per council
+  // session; only the situation banner and the two zones get rebuilt each
+  // round (see beginCouncilRound()).
+  buildCouncilFloor() {
+    const { width, height } = this.scale;
+    this.councilContainer = this.add.container(0, 0).setDepth(10500).setScrollFactor(0);
+
+    // .setInteractive() on the floor itself - same trick the other modals use
+    // - so clicks can't fall through to the (visually hidden) Task/Journal/
+    // Menu buttons sitting underneath at their normal depth.
+    const floor = this.add.rectangle(width / 2, height / 2, width, height, 0x2a1c10, 0.94).setInteractive().setScrollFactor(0);
+    const rug = this.add.rectangle(width / 2, height / 2 + 30, Math.min(680, width - 80), height - 220, 0x6b4f30, 0.5)
+      .setStrokeStyle(3, 0x9c3b2e).setScrollFactor(0);
+    this.councilContainer.add([floor, rug]);
+
+    // A row of onlookers along the back wall - atmosphere only. Simple
+    // head+shoulders silhouettes instead of emoji, so they read as a crowd
+    // in shadow rather than a row of icons.
+    for (let x = 60; x < width - 40; x += 70) {
+      const shoulders = this.add.ellipse(x, 54, 16, 18, 0xf5e2c8, 0.2).setScrollFactor(0);
+      const head = this.add.circle(x, 41, 5, 0xf5e2c8, 0.26).setScrollFactor(0);
+      this.councilContainer.add([shoulders, head]);
+    }
+
+    this.councilTitleTxt = this.add.text(width / 2, 72, 'Town Council — Take Your Stand', {
+      fontFamily: '"Tildunk", Georgia, serif', fontSize: 17, color: '#f5e2c8', fontStyle: 'bold'
+    }).setOrigin(0.5).setScrollFactor(0);
+
+    this.councilRoundTxt = this.add.text(width / 2, 96, '', {
+      fontFamily: '"Tildunk", sans-serif', fontSize: 12, color: '#d8b04a'
+    }).setOrigin(0.5).setScrollFactor(0);
+
+    this.councilTrustTxt = this.add.text(width - 16, 72, '', {
+      fontFamily: '"Tildunk", sans-serif', fontSize: 13, color: '#fff8e7', backgroundColor: '#000000aa', padding: { x: 8, y: 4 }
+    }).setOrigin(1, 0.5).setScrollFactor(0);
+
+    const barW = 260, barH = 10;
+    this.councilTimerBg = this.add.rectangle(width / 2, 118, barW, barH, 0x000000, 0.5).setStrokeStyle(2, 0xf5e2c8).setScrollFactor(0);
+    this.councilTimerFill = this.add.rectangle(width / 2 - barW / 2, 118, barW, barH - 4, 0xd8b04a, 1).setOrigin(0, 0.5).setScrollFactor(0);
+    this.councilTimerW = barW;
+
+    this.councilSituationTxt = this.add.text(width / 2, 142, '', {
+      fontFamily: '"Tildunk", sans-serif', fontSize: 14, color: '#fff8e7', align: 'center',
+      wordWrap: { width: Math.min(560, width - 80) }
+    }).setOrigin(0.5, 0).setScrollFactor(0);
+
+    // The player's stand-in on the floor - reuses their own walk anims
+    // (created earlier in createPlayerAnims for the same textureKey), so it
+    // actually walks in place of just sliding around on a static frame.
+    const character = this.registry.get('selectedCharacter') || 'hiraya';
+    this.councilToken = this.add.sprite(width / 2, height - 110, character + '-sheet', 0).setScrollFactor(0).setScale(0.9);
+    this.councilToken.facing = 'down';
+
+    const hint = this.add.text(width / 2, height - 18, 'WASD / arrows to move — step into the zone that matches your answer', {
+      fontFamily: '"Tildunk", sans-serif', fontSize: 11, color: '#9aa0aa'
+    }).setOrigin(0.5).setScrollFactor(0);
+
+    this.councilContainer.add([
+      this.councilTitleTxt, this.councilRoundTxt, this.councilTrustTxt,
+      this.councilTimerBg, this.councilTimerFill, this.councilSituationTxt, this.councilToken, hint
+    ]);
+
+    this.councilZones = [];
+    this.locked = false;
+    this.beginCouncilRound();
+  }
+
+  updateCouncilTrustText() {
+    this.councilTrustTxt.setText(`Sound decisions: ${this.councilScore}/${CHAPTER2_COUNCIL.length}`);
+  }
+
+  // Sizes a label down (in 1px steps) until it comfortably sits inside a
+  // circle of the given radius, rather than wordWrap alone - which sets
+  // line-width but not line-count, so long options used to spill past the
+  // circle's edge vertically. Stops at a sensible floor so text never goes
+  // unreadably small.
+  fitTextToCircle(x, y, text, radius) {
+    const maxWidth = radius * 1.5;
+    const maxHeight = radius * 1.35;
+    let fontSize = 15;
+    let label;
+    while (true) {
+      if (label) label.destroy();
+      label = this.add.text(x, y, text, {
+        fontFamily: '"Tildunk", sans-serif', fontSize, color: '#fff8e7', align: 'center',
+        wordWrap: { width: maxWidth, useAdvancedWrap: true }, lineSpacing: 2
+      }).setOrigin(0.5).setScrollFactor(0);
+      if (label.height <= maxHeight || fontSize <= 9) break;
+      fontSize -= 1;
+    }
+    return label;
+  }
+
+  // Builds one polished, circular "vote here" zone: a slow-breathing outer
+  // glow, the main filled ring, a soft gloss highlight for depth, and the
+  // option's text fitted to sit fully inside the circle.
+  buildCouncilZone(x, y, radius, labelText, key) {
+    const glow = this.add.circle(x, y, radius + 16, 0xd8b04a, 0.14).setScrollFactor(0);
+    this.tweens.add({
+      targets: glow, alpha: { from: 0.08, to: 0.24 }, duration: 1400,
+      yoyo: true, repeat: -1, ease: 'Sine.easeInOut'
+    });
+
+    const circle = this.add.circle(x, y, radius, 0x3c2f1d, 0.55)
+      .setStrokeStyle(3, 0xd8b04a, 0.9).setScrollFactor(0);
+
+    const highlight = this.add.ellipse(x - radius * 0.3, y - radius * 0.4, radius * 0.9, radius * 0.5, 0xffffff, 0.08)
+      .setAngle(-20).setScrollFactor(0);
+
+    const label = this.fitTextToCircle(x, y, labelText, radius);
+
+    this.councilContainer.add([glow, circle, highlight, label]);
+    return { key, x, y, circle, glow, highlight, label };
+  }
+
+  beginCouncilRound() {
+    const { width, height } = this.scale;
+    const round = CHAPTER2_COUNCIL[this.councilIndex];
+    this.councilResolved = false;
+    this.councilRoundTxt.setText(`Decision ${this.councilIndex + 1}/${CHAPTER2_COUNCIL.length}`);
+    this.councilSituationTxt.setText(round.situation);
+    this.updateCouncilTrustText();
+
+    // reset the token to the starting mark and the timer to full
+    this.councilToken.setPosition(width / 2, height - 110);
+    this.councilTimeLeft = CHAPTER2_COUNCIL_ROUND_MS;
+    this.councilTimerFill.width = this.councilTimerW;
+    this.councilTimerFill.setFillStyle(0xd8b04a);
+
+    // randomize which side each option lands on so it's never just muscle
+    // memory from the previous round.
+    const options = Phaser.Utils.Array.Shuffle([...round.options]);
+    const zoneY = height / 2 - 10;
+    const positions = [width / 2 - 190, width / 2 + 190];
+    this.councilZones = options.map((opt, i) =>
+      this.buildCouncilZone(positions[i], zoneY, CHAPTER2_COUNCIL_ZONE_RADIUS, opt.label, opt.key)
+    );
+  }
+
+  // Drives the free-floating token while mode === 'towncouncil' - called
+  // from update() below, the same dispatch pattern Chapter1Scene uses for
+  // its riverrun mode.
+  updateTownCouncil(time, delta) {
+    if (this.locked || this.councilResolved) return;
+
+    let vx = 0, vy = 0;
+    if (this.keys.left.isDown || this.cursors.left.isDown) vx -= 1;
+    if (this.keys.right.isDown || this.cursors.right.isDown) vx += 1;
+    if (this.keys.up.isDown || this.cursors.up.isDown) vy -= 1;
+    if (this.keys.down.isDown || this.cursors.down.isDown) vy += 1;
+
+    if (vx !== 0 || vy !== 0) {
+      const len = Math.hypot(vx, vy);
+      const { width, height } = this.scale;
+      const nx = this.councilToken.x + (vx / len) * CHAPTER2_COUNCIL_TOKEN_SPEED * (delta / 1000);
+      const ny = this.councilToken.y + (vy / len) * CHAPTER2_COUNCIL_TOKEN_SPEED * (delta / 1000);
+      this.councilToken.x = Phaser.Math.Clamp(nx, 60, width - 60);
+      this.councilToken.y = Phaser.Math.Clamp(ny, 170, height - 60);
+
+      // Same facing/anim precedence as the main update() loop below -
+      // vertical movement wins over horizontal - so the token actually
+      // walks instead of gliding around on its idle frame.
+      if (vy < 0) this.councilToken.facing = 'up';
+      else if (vy > 0) this.councilToken.facing = 'down';
+      else if (vx !== 0) { this.councilToken.facing = 'side'; this.councilToken.setFlipX(vx > 0); }
+
+      this.councilToken.play(`${this.prefix}-walk-${this.councilToken.facing}`, true);
+    } else {
+      this.councilToken.anims.stop();
+      const idleFrame = { down: 0, up: 12, side: 24 }[this.councilToken.facing];
+      this.councilToken.setFrame(idleFrame);
+    }
+
+    this.councilTimeLeft -= delta;
+    const pct = Phaser.Math.Clamp(this.councilTimeLeft / CHAPTER2_COUNCIL_ROUND_MS, 0, 1);
+    this.councilTimerFill.width = Math.max(0, this.councilTimerW * pct);
+    if (pct < 0.3) this.councilTimerFill.setFillStyle(0xc24a38);
+
+    for (const zone of this.councilZones) {
+      if (Phaser.Math.Distance.Between(this.councilToken.x, this.councilToken.y, zone.x, zone.y) < CHAPTER2_COUNCIL_ZONE_RADIUS) {
+        this.resolveCouncilRound(zone.key);
+        return;
+      }
+    }
+
+    if (this.councilTimeLeft <= 0) this.resolveCouncilRound(null);
+  }
+
+  // selectedKey is null on a timeout (no zone reached in time).
+  resolveCouncilRound(selectedKey) {
+    this.councilResolved = true;
+    const round = CHAPTER2_COUNCIL[this.councilIndex];
+    const isCorrect = selectedKey === round.correct;
+    if (isCorrect) this.councilScore++;
+    SoundManager.play(this, isCorrect ? 'correct' : 'incorrect');
+    if (!isCorrect) this.cameras.main.shake(120, 0.004);
+    this.updateCouncilTrustText();
+
+    this.councilZones.forEach(zone => {
+      this.tweens.killTweensOf(zone.glow);
+      if (zone.key === round.correct) {
+        zone.circle.setFillStyle(0x3c7a3e, 0.65).setStrokeStyle(3, 0x6fae55);
+        zone.glow.setFillStyle(0x6fae55, 0.22);
+      } else if (zone.key === selectedKey) {
+        zone.circle.setFillStyle(0xc24a38, 0.65).setStrokeStyle(3, 0xe0705f);
+        zone.glow.setFillStyle(0xe0705f, 0.22);
+      } else {
+        zone.circle.setAlpha(0.3);
+        zone.glow.setAlpha(0.05);
+        zone.highlight.setAlpha(0.03);
+      }
+    });
+
+    const { width, height } = this.scale;
+    const verdictLabel = selectedKey === null ? "Time's up!" : (isCorrect ? 'Sound decision.' : 'A harder road, that one.');
+    const verdict = this.add.text(width / 2, height - 190, verdictLabel, {
+      fontFamily: '"Tildunk", Georgia, serif', fontSize: 16, fontStyle: 'bold',
+      color: isCorrect ? '#3c7a3e' : '#c24a38', backgroundColor: '#000000aa', padding: { x: 10, y: 5 }
+    }).setOrigin(0.5).setScrollFactor(0);
+    const explanation = this.add.text(width / 2, height - 160, round.explanation, {
+      fontFamily: '"Tildunk", sans-serif', fontSize: 12, color: '#fff8e7', align: 'center', backgroundColor: '#000000aa',
+      padding: { x: 10, y: 6 }, wordWrap: { width: Math.min(520, width - 100) }
+    }).setOrigin(0.5, 0).setScrollFactor(0);
+    this.councilContainer.add([verdict, explanation]);
+
+    this.locked = true;
+    this.time.delayedCall(1800, () => {
+      verdict.destroy();
+      explanation.destroy();
+      this.councilZones.forEach(z => {
+        this.tweens.killTweensOf(z.glow);
+        z.glow.destroy(); z.highlight.destroy(); z.circle.destroy(); z.label.destroy();
+      });
+      this.councilZones = [];
+      this.councilIndex++;
+      this.locked = false;
+      if (this.councilIndex < CHAPTER2_COUNCIL.length) {
+        this.beginCouncilRound();
+      } else {
+        this.finishTownCouncil();
+      }
+    });
+  }
+
+  finishTownCouncil() {
+    this.locked = true;
+    if (this.councilContainer) { this.councilContainer.destroy(); this.councilContainer = null; }
+    this.player.setVisible(true);
+    showDialogue(this, 'Don Emilio', [
+      'This is what governing a young municipality actually looked like — small, practical choices, made one at a time.',
       'Let\'s see what you remember.'
-    ], () => this.startQuiz(), ['don-emilio-happy', 'don-emilio-explain', 'don-emilio-point']);
+    ], () => this.startQuiz(), ['don-emilio-explain', 'don-emilio-point']);
   }
 
   interactWithPlot(plot) {
@@ -513,20 +837,20 @@ showJournalModal() {
     const top = height / 2 - panelH / 2;
 
     const title = this.add.text(width / 2, top + 26, 'Empty Plot', {
-      fontFamily: 'Georgia, serif', fontSize: 20, color: '#9c3b2e', fontStyle: 'bold'
+      fontFamily: '"Tildunk", Georgia, serif', fontSize: 20, color: '#9c3b2e', fontStyle: 'bold'
     }).setOrigin(0.5);
     const clueTxt = this.add.text(width / 2, top + 52, plot.clue, {
-      fontFamily: 'sans-serif', fontSize: 13, color: '#6b4a2f', align: 'center',
+      fontFamily: '"Tildunk", sans-serif', fontSize: 13, color: '#6b4a2f', align: 'center',
       wordWrap: { width: 400 }
     }).setOrigin(0.5, 0);
     const prompt = this.add.text(width / 2, top + 96, 'What should be built here?', {
-      fontFamily: 'sans-serif', fontSize: 13, color: '#3b2410', fontStyle: 'italic'
+      fontFamily: '"Tildunk", sans-serif', fontSize: 13, color: '#3b2410', fontStyle: 'italic'
     }).setOrigin(0.5);
 
     container.add([overlay, panel, title, clueTxt, prompt]);
 
     const feedback = this.add.text(width / 2, top + panelH - 100, '', {
-      fontFamily: 'sans-serif', fontSize: 12, color: '#9c3b2e', align: 'center',
+      fontFamily: '"Tildunk", sans-serif', fontSize: 12, color: '#9c3b2e', align: 'center',
       wordWrap: { width: 400 }
     }).setOrigin(0.5, 0);
     container.add(feedback);
@@ -598,13 +922,13 @@ showJournalModal() {
       },
       {
         q: 'Where should a municipal building be placed in a growing town?',
-        options: ['Near the center of the community', 'Far outside the town', 'Only next to the market', 'Hidden away from residents'],
+        options: ['Near the center of the community', 'Beside the river embarcadero', 'Only next to the market', 'Far outside the town, away from residents'],
         correct: 0,
         explanation: 'The municipal building was placed near the center of town so it could serve the whole community around it.'
       },
       {
         q: 'Why was the market placed near the road?',
-        options: ['So goods could be brought in and traded easily', 'To keep it hidden from visitors', 'Because houses were forbidden there', 'It had no particular reason'],
+        options: ['So goods could be brought in and traded easily', 'To keep it separate from the municipal building', 'Because the embarcadero could no longer be used', 'It had no particular reason'],
         correct: 0,
         explanation: 'Markets sat close to the road so goods could move in and out easily for trade.'
       }
@@ -619,11 +943,15 @@ showQuizQuestion() {
 
     const overlay = this.add.rectangle(width / 2, height / 2, width, height, 0x000000, 0.45).setInteractive().setScrollFactor(0);
     const panel = this.add.rectangle(width / 2, height / 2, 540, 380, 0xfff8e7, 1).setStrokeStyle(4, 0x9c3b2e);
+    // Kept so showQuizFeedback() can grow the panel downward if a long
+    // explanation wraps to more lines than the base 380px height allows for.
+    this.quizPanel = panel;
+    this.quizPanelTop = panel.y - panel.height / 2;
     const qNum = this.add.text(width / 2, height / 2 - 164, `Question ${this.quizIndex + 1} / ${this.quizQuestions.length}`, {
-      fontFamily: 'sans-serif', fontSize: 13, color: '#9c3b2e'
+      fontFamily: '"Tildunk", sans-serif', fontSize: 13, color: '#9c3b2e'
     }).setOrigin(0.5);
     const qText = this.add.text(width / 2, height / 2 - 138, qData.q, {
-      fontFamily: 'Georgia, serif', fontSize: 19, color: '#3b2410', align: 'center',
+      fontFamily: '"Tildunk", Georgia, serif', fontSize: 19, color: '#3b2410', align: 'center',
       wordWrap: { width: 460 }
     }).setOrigin(0.5, 0);
 
@@ -659,17 +987,33 @@ showQuizQuestion() {
 
     const { width, height } = this.scale;
     const verdict = this.add.text(width / 2, height / 2 + 96, isCorrect ? 'Correct!' : 'Not quite.', {
-      fontFamily: 'Georgia, serif', fontSize: 17, fontStyle: 'bold',
+      fontFamily: '"Tildunk", Georgia, serif', fontSize: 17, fontStyle: 'bold',
       color: isCorrect ? '#3c7a3e' : '#9c3b2e'
     }).setOrigin(0.5);
     const explanationTxt = this.add.text(width / 2, height / 2 + 118, qData.explanation || '', {
-      fontFamily: 'sans-serif', fontSize: 13, color: '#3b2410', align: 'center',
+      fontFamily: '"Tildunk", sans-serif', fontSize: 13, color: '#3b2410', align: 'center',
       wordWrap: { width: 460 }
     }).setOrigin(0.5, 0);
 
     container.add([verdict, explanationTxt]);
 
-    const { rect, txt } = createButton(this, width / 2, height / 2 + 170, 'Continue', () => {
+    // Continue sits below wherever the explanation text actually ends -
+    // longer explanations (or a wider font) can wrap to 3 lines instead of
+    // 2, and a fixed offset here let the button overlap the last line.
+    const continueY = explanationTxt.y + explanationTxt.height + 24;
+
+    // If that pushes the button past the panel's original bottom edge,
+    // grow the panel downward (top edge stays put) so the button - and the
+    // last line of explanation text - stay inside the cream box instead of
+    // spilling past its border.
+    const requiredBottom = continueY + 20 + 16;
+    if (this.quizPanel && requiredBottom > this.quizPanel.y + this.quizPanel.height / 2) {
+      const newHeight = requiredBottom - this.quizPanelTop;
+      this.quizPanel.setSize(540, newHeight);
+      this.quizPanel.y = this.quizPanelTop + newHeight / 2;
+    }
+
+    const { rect, txt } = createButton(this, width / 2, continueY, 'Continue', () => {
       container.destroy();
       this.answerQuiz(isCorrect);
     }, { width: 160, height: 40, fontSize: 16, color: 0x3c7a3e, hoverColor: 0x4c9a4e });
@@ -717,15 +1061,15 @@ const { width, height } = this.scale;
     const overlay = this.add.rectangle(width / 2, height / 2, width, height, 0x000000, 0.55).setInteractive().setScrollFactor(0);
     const panel = this.add.rectangle(width / 2, height / 2, 460, 240, 0xfff8e7, 1).setStrokeStyle(4, 0x9c3b2e);
     const title = this.add.text(width / 2, height / 2 - 80, 'Journal Page #2 Unlocked!', {
-      fontFamily: 'Georgia, serif', fontSize: 22, color: '#9c3b2e', fontStyle: 'bold'
+      fontFamily: '"Tildunk", Georgia, serif', fontSize: 22, color: '#9c3b2e', fontStyle: 'bold'
     }).setOrigin(0.5);
     const scoreTxt = this.add.text(width / 2, height / 2 - 34, `You remembered ${this.quizScore} / ${this.quizQuestions.length}.`, {
-      fontFamily: 'sans-serif', fontSize: 16, color: '#3b2410'
+      fontFamily: '"Tildunk", sans-serif', fontSize: 16, color: '#3b2410'
     }).setOrigin(0.5);
     const flavor = this.add.text(width / 2, height / 2, chapter3Ready
       ? 'The Birth of a Municipality — recorded in the journal. Chapter 3 awaits.'
       : 'The Birth of a Municipality — recorded in the journal. Chapter 3 is still being written — more adventures coming soon!', {
-      fontFamily: 'sans-serif', fontSize: 14, color: '#6b4a2f', align: 'center', wordWrap: { width: 380 }
+      fontFamily: '"Tildunk", sans-serif', fontSize: 14, color: '#6b4a2f', align: 'center', wordWrap: { width: 380 }
     }).setOrigin(0.5, 0);
 
     container.add([overlay, panel, title, scoreTxt, flavor]);
@@ -736,7 +1080,12 @@ const { width, height } = this.scale;
     container.add([rect, txt]);
   }
 
-  update() {
+  update(time, delta) {
+    if (this.mode === 'towncouncil') {
+      this.updateTownCouncil(time, delta);
+      return;
+    }
+
     // interaction prompt + key handling
     if (!this.locked && (this.mode === 'explore')) {
       const nearest = this.nearestInteractable();

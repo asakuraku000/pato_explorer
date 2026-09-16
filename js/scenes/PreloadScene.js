@@ -12,7 +12,7 @@ class PreloadScene extends Phaser.Scene {
     // Kept as an instance property so create() can swap the message once
     // loading is actually done (see showTapToBegin()).
     this.loadingText = this.add.text(width / 2, height / 2 - 34, 'Loading Pato Explorer...', {
-      fontFamily: 'Georgia, serif',
+      fontFamily: '"Tildunk", Georgia, serif',
       fontSize: 18,
       color: '#eee'
     }).setOrigin(0.5);
@@ -24,6 +24,20 @@ class PreloadScene extends Phaser.Scene {
 
     // images
     this.load.image('bg-village', 'assets/images/bg.png');
+
+    // Wooden-Gold UI icon pack - used to skin the Main Menu screen (see
+    // MenuScene.js) and the in-gameplay HUD buttons (Task/Journal/Menu -
+    // see PrologueScene/Chapter1-5Scene/GameScene). Long glossy plank =
+    // text buttons (Start, Chapters, Task, Journal, Menu); hexagon banner =
+    // title backdrop; round wood medallions = icon-only buttons (Settings,
+    // About, Sound toggle). See createWoodButton()/createIconButton() in
+    // ui.js.
+    this.load.image('wood-btn-long', 'assets/images/ui/wood/long_button.png');
+    this.load.image('wood-banner-hex', 'assets/images/ui/wood/banner_hexagon.png');
+    this.load.image('wood-icon-settings', 'assets/images/ui/wood/round_settings.png');
+    this.load.image('wood-icon-info', 'assets/images/ui/wood/round_info.png');
+    this.load.image('wood-icon-sound-on', 'assets/images/ui/wood/round_sound_on.png');
+    this.load.image('wood-icon-sound-off', 'assets/images/ui/wood/round_sound_off.png');
 
     // Theater-curtain fabric (see curtainClose/curtainOpen in ui.js) - one
     // portrait-ish crop, stretched across each panel and mirrored on the
@@ -146,8 +160,8 @@ class PreloadScene extends Phaser.Scene {
     const { width, height } = this.scale;
     this.loadingText.setText('Ready!');
 
-    const prompt = this.add.text(width / 2, height / 2 + 46, 'Tap / Click to Begin', {
-      fontFamily: 'Georgia, serif',
+    const prompt = this.add.text(width / 2, height / 2 + 46, 'Press Any Key to Begin', {
+      fontFamily: '"Tildunk", Georgia, serif',
       fontSize: 20,
       color: '#eee'
     }).setOrigin(0.5);

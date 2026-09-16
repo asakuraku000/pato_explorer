@@ -6,49 +6,72 @@ class MenuScene extends Phaser.Scene {
   create() {
     SoundManager.playMusic(this, 'bg-menu');
     const { width, height } = this.scale;
+    const cx = width / 2;
 
-    const bg = this.add.image(width / 2, height / 2, 'bg-village');
+    const bg = this.add.image(cx, height / 2, 'bg-village');
     coverFitImage(bg, width, height);
-    this.add.rectangle(width / 2, height / 2, width, height, 0x1a1206, 0.32);
+    this.add.rectangle(cx, height / 2, width, height, 0x1a1206, 0.32);
 
-    this.add.text(width / 2, height * 0.2, 'PATO EXPLORER', {
-      fontFamily: 'Georgia, serif',
-      fontSize: 56,
+    // --- Title, on a Wooden-Gold hexagon banner ---
+    const bannerY = 96;
+    this.add.image(cx, bannerY, 'wood-banner-hex').setDisplaySize(460, 166);
+
+    this.add.text(cx, bannerY - 2, 'PATO EXPLORER', {
+      fontFamily: '"Tildunk", Georgia, serif',
+      fontSize: 46,
       color: '#fff8e7',
       stroke: '#3b2410',
-      strokeThickness: 8
+      strokeThickness: 7,
+      fontStyle: 'bold'
     }).setOrigin(0.5).setShadow(2, 4, '#00000066', 6, true, true);
 
-    this.add.text(width / 2, height * 0.2 + 46, 'Where the river remembers', {
-      fontFamily: 'Georgia, serif',
+    this.add.text(cx, bannerY + 96, 'Where the river remembers', {
+      fontFamily: '"Tildunk", Georgia, serif',
       fontSize: 18,
       color: '#f5e2c8'
     }).setOrigin(0.5).setShadow(1, 2, '#00000066', 3, true, true);
 
-    // Four evenly-spaced main menu buttons: Start, Chapter, Settings, About.
-    const menuTop = height * 0.52;
-    const spacing = 68;
-
-    const startBtn = createButton(this, width / 2, menuTop, 'Start', () => {
-      startBtn.rect.disableInteractive();
-      chapterBtn.rect.disableInteractive();
-      settingsBtn.rect.disableInteractive();
-      aboutBtn.rect.disableInteractive();
+    // --- Primary actions: two Wooden-Gold plank buttons, Start bigger than Chapters ---
+    const startBtn = createWoodButton(this, cx, 300, 'Start Adventure', () => {
+      startBtn.image.disableInteractive();
+      chapterBtn.image.disableInteractive();
       this.registry.set('selectedCharacter', 'hiraya');
       curtainClose(this, () => this.scene.start('Prologue'));
-    });
+    }, { width: 340, height: 100, fontSize: 30 });
 
-    const chapterBtn = createButton(this, width / 2, menuTop + spacing, 'Chapter', () => {
+    const chapterBtn = createWoodButton(this, cx, 406, 'Chapters', () => {
       this.showChapterSelect();
-    });
+    }, { width: 280, height: 78, fontSize: 24 });
 
-    const settingsBtn = createButton(this, width / 2, menuTop + spacing * 2, 'Settings', () => {
+    // --- Secondary actions: round Wooden-Gold icon buttons (Settings / Sound / About) ---
+    const iconY = 486;
+
+    createIconButton(this, cx - 110, iconY, 'wood-icon-settings', () => {
       this.scene.start('Settings');
-    });
+    }, { size: 60, caption: 'Settings' });
 
-    const aboutBtn = createButton(this, width / 2, menuTop + spacing * 3, 'About', () => {
+    // Sound toggle - mutes/restores the menu music via the same registry
+    // value (musicVolume) the Settings screen's Music row already drives,
+    // so the two stay in sync no matter which one the player uses.
+    const isMuted = () => (this.registry.get('musicVolume') ?? 0.5) <= 0;
+    const soundBtn = createIconButton(
+      this, cx, iconY, isMuted() ? 'wood-icon-sound-off' : 'wood-icon-sound-on',
+      () => {
+        if (isMuted()) {
+          const restore = this.registry.get('_musicVolumeBeforeMute');
+          SoundManager.setMusicVolume(this, restore > 0 ? restore : 0.5);
+        } else {
+          this.registry.set('_musicVolumeBeforeMute', this.registry.get('musicVolume'));
+          SoundManager.setMusicVolume(this, 0);
+        }
+        soundBtn.image.setTexture(isMuted() ? 'wood-icon-sound-off' : 'wood-icon-sound-on');
+      },
+      { size: 60, caption: 'Sound' }
+    );
+
+    createIconButton(this, cx + 110, iconY, 'wood-icon-info', () => {
       this.scene.start('About');
-    });
+    }, { size: 60, caption: 'About' });
   }
 
   // Chapter-select modal: lists every chapter, in story order, from the
@@ -70,14 +93,14 @@ class MenuScene extends Phaser.Scene {
     const rowH = 44;
     const panelH = 96 + candidates.length * rowH;
     const panel = this.add.rectangle(width / 2, height / 2, 320, panelH, 0x20222a, 1)
-      .setStrokeStyle(3, 0x9c3b2e);
+      .setStrokeStyle(3, 0xd8b04a);
     const top = height / 2 - panelH / 2;
 
     const title = this.add.text(width / 2, top + 30, 'Chapters', {
-      fontFamily: 'Georgia, serif', fontSize: 22, color: '#fff8e7'
+      fontFamily: '"Tildunk", Georgia, serif', fontSize: 22, color: '#fff8e7'
     }).setOrigin(0.5);
     const sub = this.add.text(width / 2, top + 54, 'Jump back into any chapter you\u2019ve reached', {
-      fontFamily: 'sans-serif', fontSize: 11, color: '#c9cdd6', fontStyle: 'italic'
+      fontFamily: '"Tildunk", sans-serif', fontSize: 11, color: '#c9cdd6', fontStyle: 'italic'
     }).setOrigin(0.5);
 
     container.add([overlay, panel, title, sub]);
@@ -99,7 +122,7 @@ class MenuScene extends Phaser.Scene {
         const rect = this.add.rectangle(width / 2, y, 260, 34, 0x33363f, 0.7)
           .setStrokeStyle(2, 0x555a66);
         const txt = this.add.text(width / 2, y, `\u{1F512} ${c.label}`, {
-          fontFamily: 'Georgia, serif', fontSize: 14, color: '#9aa0aa'
+          fontFamily: '"Tildunk", Georgia, serif', fontSize: 14, color: '#9aa0aa'
         }).setOrigin(0.5);
         container.add([rect, txt]);
       }

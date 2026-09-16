@@ -47,15 +47,17 @@ class GameScene extends Phaser.Scene {
     // HUD
     const displayName = character.charAt(0).toUpperCase() + character.slice(1);
     this.add.text(14, 12, displayName, {
-      fontFamily: 'Georgia, serif', fontSize: 18, color: '#fff8e7'
+      fontFamily: '"Tildunk", Georgia, serif', fontSize: 18, color: '#fff8e7'
     }).setShadow(1, 1, '#000000aa', 2, true, true);
 
-    createButton(this, width - 66, 30, 'Menu', () => {
+    // Wooden-Gold UI icon pack - same plank button used for Start
+    // Adventure/Chapters on the Main Menu (see createWoodButton in ui.js).
+    createWoodButton(this, width - 66, 30, 'Menu', () => {
       if (!this.locked) { this.locked = true; showPauseMenu(this); }
-    }, { width: 110, height: 36, fontSize: 14 });
+    }, { width: 130, height: 42, fontSize: 15 });
 
     this.add.text(width / 2, height - 16, 'WASD or Arrow Keys to move · Esc for menu', {
-      fontFamily: 'sans-serif', fontSize: 13, color: '#9aa0aa'
+      fontFamily: '"Tildunk", sans-serif', fontSize: 13, color: '#9aa0aa'
     }).setOrigin(0.5, 1);
   }
 

@@ -14,7 +14,7 @@ class CharacterSelectScene extends Phaser.Scene {
     this.add.rectangle(width / 2, height / 2, width, height, 0x1a1206, 0.5);
 
     this.add.text(width / 2, 44, 'Choose Your Explorer', {
-      fontFamily: 'Georgia, serif',
+      fontFamily: '"Tildunk", Georgia, serif',
       fontSize: 32,
       color: '#fff8e7'
     }).setOrigin(0.5).setShadow(2, 3, '#00000066', 4, true, true);

@@ -8,12 +8,12 @@ class SettingsScene extends Phaser.Scene {
 
     this.add.rectangle(width / 2, height / 2, width, height, 0x20222a);
     this.add.text(width / 2, 40, 'SETTINGS', {
-      fontFamily: 'Georgia, serif',
+      fontFamily: '"Tildunk", Georgia, serif',
       fontSize: 34,
       color: '#fff8e7'
     }).setOrigin(0.5);
 
-    const labelStyle = { fontFamily: 'sans-serif', fontSize: 16, color: '#c9cdd6' };
+    const labelStyle = { fontFamily: '"Tildunk", sans-serif', fontSize: 16, color: '#c9cdd6' };
 
     this.add.text(width / 2, 100, 'Movement Speed', labelStyle).setOrigin(0.5);
     this.makeOptionRow(
@@ -56,7 +56,7 @@ class SettingsScene extends Phaser.Scene {
         .setStrokeStyle(2, 0xf5e2c8)
         .setInteractive({ useHandCursor: true });
       this.add.text(x, y, String(label), {
-        fontFamily: 'sans-serif', fontSize: 17, color: '#fff8e7'
+        fontFamily: '"Tildunk", sans-serif', fontSize: 17, color: '#fff8e7'
       }).setOrigin(0.5);
 
       rect.on('pointerdown', () => {

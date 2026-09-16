@@ -2998,6 +2998,52 @@ const CHAPTER5_TRADITIONS = [
   }
 ];
 
+// ==========================================================================
+// MINI-GAME 2 - Ask Well
+// Framed around how to actually ask about a living tradition, fitting this
+// chapter's oral-history theme. Unlike the other chapters' second
+// mini-games (Ch1's lane-dash, Ch2's walk-into-a-zone council, Ch3's
+// guard-dodge, Ch4's proximity herding), this one plays as catching a
+// drifting "story spark": each round's options hover and bob out in the
+// plaza in front of Ate Clara and Maya as small floating cards, and the
+// player has to actually walk over and press E on the one that fits before
+// a short timer runs out. Missing, catching the wrong one, or running out
+// of time all still show the same explanation afterward - only how you
+// pick changed, not the lesson.
+// ==========================================================================
+const CHAPTER5_ASKWELL_ROUND_MS = 13000; // per-round time budget before the moment "passes"
+const CHAPTER5_ASKWELL_CATCH_RADIUS = 50; // how close the player needs to be to ask a spark
+
+const CHAPTER5_ASKWELL = [
+  {
+    situation: 'Maya wants to understand why alfombra-making still matters to Ate Clara.',
+    options: [
+      { key: 'poor', label: '"Isn\'t this kind of outdated?"' },
+      { key: 'good', label: '"What does alfombra-making mean to you?"' }
+    ],
+    correct: 'good',
+    explanation: 'An open question invites someone to actually share their story, instead of putting them on the defensive.'
+  },
+  {
+    situation: 'Maya wants to know more about Pandangguhan.',
+    options: [
+      { key: 'good', label: '"What does Pandangguhan mean to Santa Marta?"' },
+      { key: 'poor', label: '"Isn\'t that dance just for older folks?"' }
+    ],
+    correct: 'good',
+    explanation: 'Asking what a tradition means to the people who keep it gets a far richer answer than assuming it doesn\'t matter anymore.'
+  },
+  {
+    situation: "Maya wants to hear about the balut trade from Ate Clara's family.",
+    options: [
+      { key: 'poor', label: '"That\'s just an old, smelly business, right?"' },
+      { key: 'good', label: '"What was it like growing up around the balut trade?"' }
+    ],
+    correct: 'good',
+    explanation: 'A genuine question about someone\'s experience is how oral history actually gets passed down.'
+  }
+];
+
 class Chapter5Scene extends Phaser.Scene {
   constructor() {
     super('Chapter5');
@@ -3032,7 +3078,7 @@ class Chapter5Scene extends Phaser.Scene {
     });
   }
 
-  create() {
+  create(data) {
     SoundManager.playMusic(this, 'bg-game');
     const { width, height } = this.scale;
     const character = this.registry.get('selectedCharacter') || 'hiraya';
@@ -3077,6 +3123,10 @@ class Chapter5Scene extends Phaser.Scene {
     this.input.keyboard.on('keydown-ESC', () => {
       if (!this.locked) { this.locked = true; showPauseMenu(this); }
     });
+    // Only does anything during the Ask Well mini-game (see
+    // handleAskKeyPress) - guarded internally rather than only being
+    // listened for while that mode is active, same approach as ESC above.
+    this.input.keyboard.on('keydown-E', () => this.handleAskKeyPress());
 
 // --- Ate Clara & Maya --- (real sprite sheets, same 44x78 grid
      // convention as hiraya-sheet/lola-sheet/donemilio-sheet/kapitanandres-sheet/
@@ -3131,35 +3181,38 @@ class Chapter5Scene extends Phaser.Scene {
     // of scrolling away with the map now that the camera follows the player)
     const displayName = character.charAt(0).toUpperCase() + character.slice(1);
     this.add.text(14, 12, displayName, {
-      fontFamily: 'Georgia, serif', fontSize: 18, color: '#fff8e7'
+      fontFamily: '"Tildunk", Georgia, serif', fontSize: 18, color: '#fff8e7'
     }).setShadow(1, 1, '#000000aa', 2, true, true).setScrollFactor(0).setDepth(900);
 
     this.add.text(width / 2, 16, 'Chapter 5: A Living Heritage', {
-      fontFamily: 'Georgia, serif', fontSize: 16, color: '#f5e2c8'
+      fontFamily: '"Tildunk", Georgia, serif', fontSize: 16, color: '#f5e2c8'
     }).setOrigin(0.5, 0).setShadow(1, 1, '#000000aa', 2, true, true).setScrollFactor(0).setDepth(900);
 
     // one shared progress readout, re-labeled per phase (see updateProgress)
     this.progressText = this.add.text(width / 2, 38, '', {
-      fontFamily: 'sans-serif', fontSize: 13, color: '#f5e2c8'
+      fontFamily: '"Tildunk", sans-serif', fontSize: 13, color: '#f5e2c8'
     }).setOrigin(0.5, 0).setShadow(1, 1, '#000000aa', 2, true, true).setScrollFactor(0).setDepth(900);
 
-    const journalBtn = createButton(this, 66, height - 30, 'Journal', () => {
+    // Wooden-Gold UI icon pack - same plank button used for Start
+    // Adventure/Chapters on the Main Menu (see createWoodButton in ui.js),
+    // sized down to fit the gameplay HUD.
+    const journalBtn = createWoodButton(this, 66, height - 30, 'Journal', () => {
       if (!this.locked && this.mode !== 'done') {
         this.locked = true;
         this.showJournalModal();
       }
-    }, { width: 110, height: 34, fontSize: 13 });
-    journalBtn.rect.setScrollFactor(0).setDepth(900);
+    }, { width: 130, height: 40, fontSize: 14 });
+    journalBtn.image.setScrollFactor(0).setDepth(900);
     journalBtn.txt.setScrollFactor(0).setDepth(901);
 
-    const menuBtn = createButton(this, width - 66, height - 30, 'Menu', () => {
+    const menuBtn = createWoodButton(this, width - 66, height - 30, 'Menu', () => {
       if (!this.locked) { this.locked = true; showPauseMenu(this); }
-    }, { width: 110, height: 34, fontSize: 13 });
-    menuBtn.rect.setScrollFactor(0).setDepth(900);
+    }, { width: 130, height: 40, fontSize: 14 });
+    menuBtn.image.setScrollFactor(0).setDepth(900);
     menuBtn.txt.setScrollFactor(0).setDepth(901);
 
     this.add.text(width / 2, height - 12, 'Esc for menu', {
-      fontFamily: 'sans-serif', fontSize: 12, color: '#9aa0aa'
+      fontFamily: '"Tildunk", sans-serif', fontSize: 12, color: '#9aa0aa'
     }).setOrigin(0.5, 1).setScrollFactor(0).setDepth(900);
 
     // The matching mini-game's card/slot divs and their drag listeners are
@@ -3204,6 +3257,8 @@ class Chapter5Scene extends Phaser.Scene {
     if (!this.progressText) return;
     if (this.mode === 'matching') {
       this.progressText.setText(`Matched: ${this.matchedCount || 0}/${CHAPTER5_TRADITIONS.length}`);
+    } else if (this.mode === 'askwell') {
+      this.progressText.setText(`Asked: ${this.askIndex}/${CHAPTER5_ASKWELL.length}`);
     } else {
       this.progressText.setText('');
     }
@@ -3223,7 +3278,7 @@ showJournalModal() {
     const top = height / 2 - panelH / 2;
 
     const title = this.add.text(width / 2, top + 28, "Lola's Journal", {
-      fontFamily: 'Georgia, serif', fontSize: 20, color: '#9c3b2e', fontStyle: 'bold'
+      fontFamily: '"Tildunk", Georgia, serif', fontSize: 20, color: '#9c3b2e', fontStyle: 'bold'
     }).setOrigin(0.5);
 
     container.add([overlay, panel, title]);
@@ -3232,16 +3287,16 @@ showJournalModal() {
       const unlocked = pages.includes(ch.id);
       const y = top + 62 + i * rowH;
       const mark = this.add.text(width / 2 - 198, y, unlocked ? '✓' : '🔒', {
-        fontFamily: 'sans-serif', fontSize: 15,
+        fontFamily: '"Tildunk", sans-serif', fontSize: 15,
         color: unlocked ? '#3c7a3e' : '#9aa0aa'
       }).setOrigin(0, 0.5);
       const label = this.add.text(width / 2 - 172, y, `Page ${ch.id}: ${ch.title}`, {
-        fontFamily: 'sans-serif', fontSize: 13,
+        fontFamily: '"Tildunk", sans-serif', fontSize: 13,
         color: unlocked ? '#3b2410' : '#9aa0aa',
         wordWrap: { width: 300 }
       }).setOrigin(0, 0.5);
       const status = this.add.text(width / 2 + 198, y, unlocked ? 'Unlocked' : 'Locked', {
-        fontFamily: 'sans-serif', fontSize: 11,
+        fontFamily: '"Tildunk", sans-serif', fontSize: 11,
         color: unlocked ? '#3c7a3e' : '#9aa0aa'
       }).setOrigin(1, 0.5);
       container.add([mark, label, status]);
@@ -3319,14 +3374,14 @@ showJournalModal() {
     Object.assign(title.style, {
       position: 'absolute', top: '22px', left: '0', right: '0',
       textAlign: 'center', color: '#9c3b2e', fontWeight: 'bold',
-      fontFamily: 'Georgia, serif', fontSize: '21px'
+      fontFamily: '"Tildunk", Georgia, serif', fontSize: '21px'
     });
 
     const subtitle = document.createElement('div');
     subtitle.textContent = 'Drag each card onto the tradition it belongs to.';
     Object.assign(subtitle.style, {
       position: 'absolute', top: '54px', left: '0', right: '0',
-      textAlign: 'center', color: '#6b4a2f', fontFamily: 'sans-serif', fontSize: '13px'
+      textAlign: 'center', color: '#6b4a2f', fontFamily: '"Tildunk", sans-serif', fontSize: '13px'
     });
 
     panel.appendChild(title);
@@ -3367,7 +3422,7 @@ showJournalModal() {
         textAlign: 'center', padding: '6px',
         background: 'rgba(255,255,255,0.5)',
         border: '2px solid #6b4a2f',
-        color: '#3b2410', fontFamily: 'sans-serif', fontSize: '12px',
+        color: '#3b2410', fontFamily: '"Tildunk", sans-serif', fontSize: '12px',
         transition: 'background 0.15s ease-out'
       });
       panel.appendChild(slot);
@@ -3391,7 +3446,7 @@ showJournalModal() {
         background: '#9c3b2e',
         border: '2px solid #f5e2c8',
         color: '#fff8e7', fontWeight: 'bold',
-        fontFamily: 'Georgia, serif', fontSize: '15px',
+        fontFamily: '"Tildunk", Georgia, serif', fontSize: '15px',
         cursor: 'grab', userSelect: 'none', touchAction: 'none',
         transition: 'left 0.22s ease-out, top 0.22s ease-out'
       });
@@ -3555,10 +3610,197 @@ showJournalModal() {
       "None of it survives on its own, though. It survives because people keep choosing to pass it on."
     ], () => {
       showDialogue(this, 'Maya', [
-        "That's kind of the whole point, actually.",
-        "Let's see how much of it stuck - three quick questions."
-      ], () => this.startQuiz(), ['maya-happy', 'maya-wink']);
+        "That's kind of the whole point, actually — knowing how to ask, and to listen.",
+        "Try this with me before Ate Clara quizzes you."
+      ], () => this.startAskWell(), ['maya-happy', 'maya-wink']);
     }, ['ate-clara-wink', 'ate-clara-happy']);
+  }
+
+  // ==========================================================================
+  // MINI-GAME 2 - Ask Well (see CHAPTER5_ASKWELL above)
+  // ==========================================================================
+  startAskWell() {
+    this.mode = 'askwell';
+    this.askIndex = 0;
+    this.askScore = 0;
+    this.locked = false; // real-time now - the player walks the plaza to catch a spark
+    this.updateProgress();
+    this.buildAskWellHud();
+    this.startAskRound();
+  }
+
+  // One persistent pinned banner (situation text + hint + timer bar),
+  // relabeled each round by startAskRound() rather than rebuilt from
+  // scratch - the sparks themselves are what changes round to round.
+  buildAskWellHud() {
+    const { width } = this.scale;
+    const bannerW = Math.min(600, width - 40);
+    this.askHudContainer = this.add.container(0, 0).setDepth(9000).setScrollFactor(0);
+
+    const bannerBg = this.add.rectangle(width / 2, 76, bannerW, 108, 0x1c1207, 0.72).setStrokeStyle(2, 0x9c3b2e);
+    this.askSituationTxt = this.add.text(width / 2, 44, '', {
+      fontFamily: '"Tildunk", sans-serif', fontSize: 13, color: '#fff8e7', align: 'center',
+      wordWrap: { width: bannerW - 40 }
+    }).setOrigin(0.5, 0);
+    this.askHintTxt = this.add.text(width / 2, 98, '', {
+      fontFamily: '"Tildunk", sans-serif', fontSize: 12, fontStyle: 'bold', color: '#d8b04a'
+    }).setOrigin(0.5, 0);
+
+    const barW = Math.min(360, bannerW - 80), barH = 8;
+    this.askTimerBg = this.add.rectangle(width / 2, 120, barW, barH, 0x000000, 0.5).setStrokeStyle(1, 0xf5e2c8);
+    this.askTimerFill = this.add.rectangle(width / 2 - barW / 2, 120, barW, barH - 2, 0xd8b04a, 1).setOrigin(0, 0.5);
+    this.askTimerBarW = barW;
+
+    this.askHudContainer.add([bannerBg, this.askSituationTxt, this.askHintTxt, this.askTimerBg, this.askTimerFill]);
+  }
+
+  startAskRound() {
+    this.askRoundResolved = false;
+    const round = CHAPTER5_ASKWELL[this.askIndex];
+    this.updateProgress();
+    this.askSituationTxt.setText(round.situation);
+    this.askHintTxt.setText('Walk to the spark that fits, then press E').setColor('#d8b04a');
+    this.askTimeLeft = CHAPTER5_ASKWELL_ROUND_MS;
+    this.askTimerFill.width = this.askTimerBarW;
+    this.askTimerFill.setFillStyle(0xd8b04a);
+    this._askNearestInRange = null;
+    this.spawnAskSparks(round);
+  }
+
+  // Each option becomes a small floating card near Ate Clara/Maya - a soft
+  // glow behind a card with the option's line on it. updateAskWell() below
+  // gives each one a gentle, independent bob so they read as "alive"
+  // rather than pinned in place, without drifting so far the text becomes
+  // hard to read while chasing it.
+  spawnAskSparks(round) {
+    const startX = CHAPTER5_MAP_DATA.spawn.x;
+    const startY = CHAPTER5_MAP_DATA.spawn.y;
+    const n = round.options.length;
+    const spacing = 190;
+
+    this.askSparks = round.options.map((opt, i) => {
+      const anchorX = startX + (i - (n - 1) / 2) * spacing;
+      const anchorY = startY - 130;
+      const container = this.add.container(anchorX, anchorY).setDepth(500);
+      const glow = this.add.circle(0, 0, 36, 0xd8b04a, 0.2);
+      const bg = this.add.rectangle(0, 0, 176, 60, 0xfff8e7, 0.96).setStrokeStyle(3, 0x9c3b2e);
+      const label = this.add.text(0, 0, opt.label, {
+        fontFamily: '"Tildunk", sans-serif', fontSize: 11, color: '#3b2410', align: 'center',
+        wordWrap: { width: 156 }
+      }).setOrigin(0.5);
+      container.add([glow, bg, label]);
+      return { key: opt.key, container, glow, bg, anchorX, anchorY, t: 0, phase: i * 2.4 };
+    });
+  }
+
+  cleanupAskSparks() {
+    if (this.askSparks) {
+      this.askSparks.forEach(s => s.container.destroy());
+      this.askSparks = null;
+    }
+  }
+
+  // Drives the sparks' bob motion, the round timer, and the "close enough
+  // to ask" highlight - called every frame from update() while
+  // mode === 'askwell'.
+  updateAskWell(time, delta) {
+    if (!this.askSparks || this.askRoundResolved) return;
+
+    this.askTimeLeft -= delta;
+    const frac = Phaser.Math.Clamp(this.askTimeLeft / CHAPTER5_ASKWELL_ROUND_MS, 0, 1);
+    this.askTimerFill.width = this.askTimerBarW * frac;
+    this.askTimerFill.setFillStyle(frac < 0.25 ? 0xc24a38 : 0xd8b04a);
+    if (this.askTimeLeft <= 0) {
+      this.resolveAskRound(null); // the moment passed - no pick
+      return;
+    }
+
+    let nearest = null, nearestDist = Infinity;
+    this.askSparks.forEach(spark => {
+      spark.t += delta;
+      const x = spark.anchorX + Math.sin(spark.t / 900 + spark.phase) * 16;
+      const y = spark.anchorY + Math.cos(spark.t / 1300 + spark.phase * 1.6) * 12;
+      spark.container.setPosition(x, y);
+      spark.glow.setScale(1 + Math.sin(spark.t / 500 + spark.phase) * 0.1);
+
+      const d = Phaser.Math.Distance.Between(this.player.x, this.player.y, x, y);
+      if (d < nearestDist) { nearestDist = d; nearest = spark; }
+    });
+
+    const inRange = !!nearest && nearestDist < CHAPTER5_ASKWELL_CATCH_RADIUS;
+    this.askSparks.forEach(s => s.bg.setStrokeStyle(3, inRange && s === nearest ? 0xd8b04a : 0x9c3b2e));
+    this.askHintTxt.setText(inRange ? 'Press E to ask this' : 'Walk to the spark that fits, then press E')
+      .setColor(inRange ? '#3c7a3e' : '#d8b04a');
+    this._askNearestInRange = inRange ? nearest : null;
+  }
+
+  // Bound to keydown-E in create() - only does anything mid-round while
+  // standing close enough to a spark.
+  handleAskKeyPress() {
+    if (this.mode !== 'askwell' || this.locked || this.askRoundResolved || !this._askNearestInRange) return;
+    this.resolveAskRound(this._askNearestInRange.key);
+  }
+
+  // selectedKey is null on a timeout. Either way: freeze the sparks in
+  // their resolved colors for a beat, then bring up the same
+  // verdict+explanation+Continue shape the old click version used.
+  resolveAskRound(selectedKey) {
+    this.askRoundResolved = true;
+    const round = CHAPTER5_ASKWELL[this.askIndex];
+    const isCorrect = selectedKey === round.correct;
+    if (isCorrect) this.askScore++;
+    SoundManager.play(this, isCorrect ? 'correct' : 'incorrect');
+
+    this.askSparks.forEach(s => {
+      if (s.key === round.correct) s.bg.setFillStyle(0x3c7a3e, 0.95);
+      else if (s.key === selectedKey) s.bg.setFillStyle(0xc24a38, 0.95);
+      else s.bg.setFillStyle(0x9c3b2e, 0.35);
+    });
+
+    if (this.player.body) this.player.setVelocity(0, 0);
+    this.locked = true; // hold still for the explanation beat
+    this.time.delayedCall(650, () => this.showAskExplanation(round, selectedKey, isCorrect));
+  }
+
+  showAskExplanation(round, selectedKey, isCorrect) {
+    const { width, height } = this.scale;
+    const container = this.add.container(0, 0).setDepth(10500).setScrollFactor(0);
+    const overlay = this.add.rectangle(width / 2, height / 2, width, height, 0x000000, 0.45).setInteractive().setScrollFactor(0);
+    const panel = this.add.rectangle(width / 2, height / 2, 480, 240, 0xfff8e7, 1).setStrokeStyle(4, 0x9c3b2e);
+
+    const verdictLabel = selectedKey === null ? 'The moment passed.' : (isCorrect ? 'That opens things up.' : 'That tends to close people off.');
+    const verdict = this.add.text(width / 2, height / 2 - 78, verdictLabel, {
+      fontFamily: '"Tildunk", Georgia, serif', fontSize: 17, fontStyle: 'bold',
+      color: isCorrect ? '#3c7a3e' : '#9c3b2e'
+    }).setOrigin(0.5);
+    const explanationTxt = this.add.text(width / 2, height / 2 - 46, round.explanation, {
+      fontFamily: '"Tildunk", sans-serif', fontSize: 13, color: '#3b2410', align: 'center',
+      wordWrap: { width: 420 }
+    }).setOrigin(0.5, 0);
+    container.add([overlay, panel, verdict, explanationTxt]);
+
+    const { rect, txt } = createButton(this, width / 2, height / 2 + 88, 'Continue', () => {
+      container.destroy();
+      this.cleanupAskSparks();
+      this.askIndex++;
+      if (this.askIndex < CHAPTER5_ASKWELL.length) {
+        this.locked = false;
+        this.startAskRound();
+      } else {
+        this.finishAskWell();
+      }
+    }, { width: 150, height: 38, fontSize: 15, color: 0x3c7a3e, hoverColor: 0x4c9a4e });
+    container.add([rect, txt]);
+  }
+
+  finishAskWell() {
+    this.locked = true;
+    if (this.askHudContainer) { this.askHudContainer.destroy(); this.askHudContainer = null; }
+    this.updateProgress();
+    showDialogue(this, 'Maya', [
+      "I think I get it now — it's not just about knowing the facts.",
+      "Let's see how much of it stuck - three quick questions."
+    ], () => this.startQuiz(), ['maya-happy', 'maya-wink']);
   }
 
   // --- End-of-chapter quiz -------------------------------------------------
@@ -3576,7 +3818,7 @@ showJournalModal() {
       },
       {
         q: "What craft does Alfombra-making represent in Pateros' living heritage?",
-        options: ['Traditional slipper-making', 'Pottery', 'Weaving', 'Boat-building'],
+        options: ['Traditional slipper-making', 'Duck-raising', 'Weaving', 'Boat-building'],
         correct: 0,
         explanation: 'Alfombra is tied to traditional slipper-making associated with Pateros.'
       },
@@ -3597,11 +3839,15 @@ showQuizQuestion() {
 
     const overlay = this.add.rectangle(width / 2, height / 2, width, height, 0x000000, 0.45).setInteractive().setScrollFactor(0);
     const panel = this.add.rectangle(width / 2, height / 2, 540, 380, 0xfff8e7, 1).setStrokeStyle(4, 0x9c3b2e);
+    // Kept so showQuizFeedback() can grow the panel downward if a long
+    // explanation wraps to more lines than the base 380px height allows for.
+    this.quizPanel = panel;
+    this.quizPanelTop = panel.y - panel.height / 2;
     const qNum = this.add.text(width / 2, height / 2 - 154, `Question ${this.quizIndex + 1} / ${this.quizQuestions.length}`, {
-      fontFamily: 'sans-serif', fontSize: 13, color: '#9c3b2e'
+      fontFamily: '"Tildunk", sans-serif', fontSize: 13, color: '#9c3b2e'
     }).setOrigin(0.5);
     const qText = this.add.text(width / 2, height / 2 - 128, qData.q, {
-      fontFamily: 'Georgia, serif', fontSize: 19, color: '#3b2410', align: 'center',
+      fontFamily: '"Tildunk", Georgia, serif', fontSize: 19, color: '#3b2410', align: 'center',
       wordWrap: { width: 460 }
     }).setOrigin(0.5, 0);
 
@@ -3637,17 +3883,33 @@ showQuizQuestion() {
 
     const { width, height } = this.scale;
     const verdict = this.add.text(width / 2, height / 2 + 106, isCorrect ? 'Correct!' : 'Not quite.', {
-      fontFamily: 'Georgia, serif', fontSize: 17, fontStyle: 'bold',
+      fontFamily: '"Tildunk", Georgia, serif', fontSize: 17, fontStyle: 'bold',
       color: isCorrect ? '#3c7a3e' : '#9c3b2e'
     }).setOrigin(0.5);
     const explanationTxt = this.add.text(width / 2, height / 2 + 128, qData.explanation || '', {
-      fontFamily: 'sans-serif', fontSize: 13, color: '#3b2410', align: 'center',
+      fontFamily: '"Tildunk", sans-serif', fontSize: 13, color: '#3b2410', align: 'center',
       wordWrap: { width: 460 }
     }).setOrigin(0.5, 0);
 
     container.add([verdict, explanationTxt]);
 
-    const { rect, txt } = createButton(this, width / 2, height / 2 + 172, 'Continue', () => {
+    // Continue sits below wherever the explanation text actually ends -
+    // longer explanations (or a wider font) can wrap to 3 lines instead of
+    // 2, and a fixed offset here let the button overlap the last line.
+    const continueY = explanationTxt.y + explanationTxt.height + 24;
+
+    // If that pushes the button past the panel's original bottom edge,
+    // grow the panel downward (top edge stays put) so the button - and the
+    // last line of explanation text - stay inside the cream box instead of
+    // spilling past its border.
+    const requiredBottom = continueY + 20 + 16;
+    if (this.quizPanel && requiredBottom > this.quizPanel.y + this.quizPanel.height / 2) {
+      const newHeight = requiredBottom - this.quizPanelTop;
+      this.quizPanel.setSize(540, newHeight);
+      this.quizPanel.y = this.quizPanelTop + newHeight / 2;
+    }
+
+    const { rect, txt } = createButton(this, width / 2, continueY, 'Continue', () => {
       container.destroy();
       this.answerQuiz(isCorrect);
     }, { width: 160, height: 40, fontSize: 16, color: 0x3c7a3e, hoverColor: 0x4c9a4e });
@@ -3693,13 +3955,13 @@ const { width, height } = this.scale;
     const overlay = this.add.rectangle(width / 2, height / 2, width, height, 0x000000, 0.55).setInteractive().setScrollFactor(0);
     const panel = this.add.rectangle(width / 2, height / 2, 460, 240, 0xfff8e7, 1).setStrokeStyle(4, 0x9c3b2e);
     const title = this.add.text(width / 2, height / 2 - 80, 'Journal Page #5 Unlocked!', {
-      fontFamily: 'Georgia, serif', fontSize: 22, color: '#9c3b2e', fontStyle: 'bold'
+      fontFamily: '"Tildunk", Georgia, serif', fontSize: 22, color: '#9c3b2e', fontStyle: 'bold'
     }).setOrigin(0.5);
     const scoreTxt = this.add.text(width / 2, height / 2 - 34, `You remembered ${this.quizScore} / ${this.quizQuestions.length}.`, {
-      fontFamily: 'sans-serif', fontSize: 16, color: '#3b2410'
+      fontFamily: '"Tildunk", sans-serif', fontSize: 16, color: '#3b2410'
     }).setOrigin(0.5);
     const flavor = this.add.text(width / 2, height / 2, 'A Living Heritage - recorded in the journal. Only one page was ever missing.', {
-      fontFamily: 'sans-serif', fontSize: 14, color: '#6b4a2f', align: 'center', wordWrap: { width: 380 }
+      fontFamily: '"Tildunk", sans-serif', fontSize: 14, color: '#6b4a2f', align: 'center', wordWrap: { width: 380 }
     }).setOrigin(0.5, 0);
 
     container.add([overlay, panel, title, scoreTxt, flavor]);
@@ -3716,11 +3978,15 @@ const { width, height } = this.scale;
     container.add([rect, txt]);
   }
 
-  update() {
-    // No free-roam phase in this chapter (per the doc: "Instead of another
-    // exploration mission..."), so the player sprite just holds its idle
-    // pose throughout - this is still here, structured the same way as
-    // Chapter1-4's update(), in case a future revision adds one.
+  update(time, delta) {
+    // Ask Well is the one real-time phase in this chapter: the player
+    // actually walks the plaza to catch a spark, so it runs alongside the
+    // normal movement code below rather than freezing the player like
+    // matching/quiz do.
+    if (this.mode === 'askwell' && !this.locked) {
+      this.updateAskWell(time, delta);
+    }
+
     if (this.locked || this.mode === 'matching' || this.mode === 'quiz' || this.mode === 'epilogue' || this.mode === 'done') {
       if (this.player.body) this.player.setVelocity(0, 0);
       SoundManager.setFootsteps(this, false);

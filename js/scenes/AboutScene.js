@@ -13,7 +13,7 @@ class AboutScene extends Phaser.Scene {
 
     this.add.rectangle(width / 2, height / 2, width, height, 0x20222a);
     this.add.text(width / 2, 40, 'ABOUT', {
-      fontFamily: 'Georgia, serif',
+      fontFamily: '"Tildunk", Georgia, serif',
       fontSize: 34,
       color: '#fff8e7'
     }).setOrigin(0.5);
@@ -24,14 +24,14 @@ class AboutScene extends Phaser.Scene {
       .setStrokeStyle(2, 0xf5e2c8)
       .setInteractive({ useHandCursor: true });
     const aboutTabTxt = this.add.text(width / 2 - 90, 84, 'About', {
-      fontFamily: 'Georgia, serif', fontSize: 17, color: '#fff8e7'
+      fontFamily: '"Tildunk", Georgia, serif', fontSize: 17, color: '#fff8e7'
     }).setOrigin(0.5);
 
     const creditsTab = this.add.rectangle(width / 2 + 90, 84, 160, 38, 0x33363f, 1)
       .setStrokeStyle(2, 0xf5e2c8)
       .setInteractive({ useHandCursor: true });
     const creditsTabTxt = this.add.text(width / 2 + 90, 84, 'Credits', {
-      fontFamily: 'Georgia, serif', fontSize: 17, color: '#fff8e7'
+      fontFamily: '"Tildunk", Georgia, serif', fontSize: 17, color: '#fff8e7'
     }).setOrigin(0.5);
 
     this.tabButtons.about = { rect: aboutTab, txt: aboutTabTxt };
@@ -58,7 +58,7 @@ class AboutScene extends Phaser.Scene {
     this.contentContainer.removeAll(true);
     const { width } = this.scale;
     const bodyStyle = {
-      fontFamily: 'sans-serif', fontSize: 14, color: '#f5e2c8',
+      fontFamily: '"Tildunk", sans-serif', fontSize: 14, color: '#f5e2c8',
       align: 'center', wordWrap: { width: 580 }, lineSpacing: 8
     };
 
