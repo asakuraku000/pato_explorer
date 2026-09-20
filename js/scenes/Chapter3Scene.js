@@ -498,9 +498,6 @@ class Chapter3Scene extends Phaser.Scene {
       o.mark = this.add.text(o.x, o.y, '?', {
         fontFamily: '"Tildunk", sans-serif', fontSize: 22, color: '#fff8e7', fontStyle: 'bold'
       }).setOrigin(0.5).setDepth(o.y + 1);
-      o.check = this.add.text(o.x, o.y, '✓', {
-        fontFamily: '"Tildunk", sans-serif', fontSize: 22, color: '#ffffff', fontStyle: 'bold'
-      }).setOrigin(0.5).setVisible(false).setDepth(o.y + 1);
     });
 
     // --- decorative scenery (whatever else the editor placed - fences,
@@ -627,7 +624,7 @@ class Chapter3Scene extends Phaser.Scene {
   // objects, plus a 6th "Report to Kapitan Andres" task that only appears
   // once all 5 have been found (goes 5/5 -> 5/6, then 6/6 once you talk to him).
   getTaskList() {
-    const list = this.objects.map(o => ({ name: o.name, found: o.found, info: o.info, type: 'item' }));
+    const list = this.objects.map(o => ({ name: o.name, found: o.found, info: o.info, iconKey: getObjectIconKey(this, o), type: 'item' }));
     if (this.objects.every(o => o.found)) {
       list.push({
         name: 'Report to Kapitan Andres',
@@ -645,7 +642,7 @@ class Chapter3Scene extends Phaser.Scene {
     if (this.taskBtnTxt) this.taskBtnTxt.setText(`Task (${found}/${tasks.length})`);
   }
 
-  // --- Objectives modal: which hidden objects are found, x1 each --------
+  // --- Objectives modal: which hidden objects are found --------
   // Hovering a found row pops up what was learned from it.
 showObjectivesModal() {
      const { width, height } = this.scale;
@@ -685,11 +682,11 @@ showObjectivesModal() {
     tasks.forEach((t, i) => {
       const y = top + headerH + i * rowH;
       const found = t.found;
-      const mark = this.add.text(width / 2 - 150, y, found ? '✓' : '—', {
+      const mark = this.add.text(width / 2 - 172, y, found ? '✓' : '—', {
         fontFamily: '"Tildunk", sans-serif', fontSize: 16, fontStyle: 'bold',
         color: found ? '#3c7a3e' : '#9aa0aa'
       }).setOrigin(0, 0.5);
-      const label = this.add.text(width / 2 - 122, y, t.type === 'task' ? t.name : `${t.name} x1`, {
+      const label = this.add.text(width / 2 - 118, y, t.type === 'task' ? t.name : (found ? t.name : '???'), {
         fontFamily: '"Tildunk", sans-serif', fontSize: 15,
         color: found ? '#3c7a3e' : '#3b2410'
       }).setOrigin(0, 0.5);
@@ -700,6 +697,7 @@ showObjectivesModal() {
         color: found ? '#3c7a3e' : '#9aa0aa'
       }).setOrigin(1, 0.5);
       container.add([mark, label, status]);
+      if (t.type !== 'task') addTaskRowIcon(this, container, width / 2 - 140, y, t.iconKey, found);
 
       if (found) {
         const hitZone = this.add.rectangle(width / 2, y, 356, rowH, 0xffffff, 0.001)
@@ -780,8 +778,8 @@ showJournalModal() {
 
     this.objects.forEach(o => {
       if (o.found) return;
-      const d = Phaser.Math.Distance.Between(p.x, p.y, o.x, o.y);
-      if (d < bestDist) { best = { type: 'object', obj: o }; bestDist = d; }
+      const d = interactGapToObject(p, o.rect);
+      if (d < OBJECT_INTERACT_REACH && d < bestDist) { best = { type: 'object', obj: o }; bestDist = d; }
     });
 
     return best;
@@ -1108,7 +1106,7 @@ showJournalModal() {
 
   interactWithObject(o) {
     this.locked = true;
-    showInfoPopup(this, o.name.toUpperCase(), o.info, () => {
+    showFoundItemPopup(this, o, () => {
       o.found = true;
       // setAlpha works on both the Image (real icon) and the Rectangle
       // (fallback if an icon ever fails to load) - setFillStyle only
@@ -1116,11 +1114,11 @@ showJournalModal() {
       o.rect.setAlpha(0.85);
       o.label.setText(o.name);
       o.mark.setVisible(false);
-      o.check.setVisible(true);
       this.updateProgress();
       this.locked = false;
       if (this.objects.every(x => x.found)) {
         this.returnFlag.setVisible(true);
+        showToast(this, 'Talk to Kapitan Andres');
       }
     });
   }

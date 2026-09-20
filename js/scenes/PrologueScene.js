@@ -105,7 +105,7 @@ const PROLOGUE_MAP_DATA = {
       "w": 46,
       "h": 46,
       "color": "#8b4513",
-      "collidable": false,
+      "collidable": true,
       "info": "The town plaza's well has provided water to generations of Pateros residents."
     },
     {
@@ -131,7 +131,7 @@ const PROLOGUE_MAP_DATA = {
       "w": 46,
       "h": 46,
       "color": "#a0522d",
-      "collidable": false,
+      "collidable": true,
       "info": "A statue commemorating the founders of Pateros stands in the plaza's center."
     },
     {
@@ -196,7 +196,7 @@ const PROLOGUE_MAP_DATA = {
       "w": 35,
       "h": 47,
       "color": "#888888",
-      "collidable": false,
+      "collidable": true,
       "info": ""
     },
     {
@@ -209,7 +209,7 @@ const PROLOGUE_MAP_DATA = {
       "w": 35,
       "h": 47,
       "color": "#888888",
-      "collidable": false,
+      "collidable": true,
       "info": ""
     },
     {
@@ -222,7 +222,7 @@ const PROLOGUE_MAP_DATA = {
       "w": 35,
       "h": 47,
       "color": "#888888",
-      "collidable": false,
+      "collidable": true,
       "info": ""
     },
     {
@@ -235,7 +235,7 @@ const PROLOGUE_MAP_DATA = {
       "w": 35,
       "h": 47,
       "color": "#888888",
-      "collidable": false,
+      "collidable": true,
       "info": ""
     },
     {
@@ -248,7 +248,7 @@ const PROLOGUE_MAP_DATA = {
       "w": 35,
       "h": 47,
       "color": "#888888",
-      "collidable": false,
+      "collidable": true,
       "info": ""
     },
     {
@@ -261,7 +261,7 @@ const PROLOGUE_MAP_DATA = {
       "w": 35,
       "h": 47,
       "color": "#888888",
-      "collidable": false,
+      "collidable": true,
       "info": ""
     },
     {
@@ -274,7 +274,7 @@ const PROLOGUE_MAP_DATA = {
       "w": 35,
       "h": 47,
       "color": "#888888",
-      "collidable": false,
+      "collidable": true,
       "info": ""
     },
     {
@@ -560,7 +560,7 @@ const PROLOGUE_MAP_DATA = {
       "w": 17,
       "h": 20,
       "color": "#888888",
-      "collidable": false,
+      "collidable": true,
       "info": ""
     },
     {
@@ -573,7 +573,7 @@ const PROLOGUE_MAP_DATA = {
       "w": 27,
       "h": 36,
       "color": "#888888",
-      "collidable": false,
+      "collidable": true,
       "info": ""
     },
     {
@@ -586,7 +586,7 @@ const PROLOGUE_MAP_DATA = {
       "w": 29,
       "h": 30,
       "color": "#888888",
-      "collidable": false,
+      "collidable": true,
       "info": ""
     },
     {
@@ -599,7 +599,7 @@ const PROLOGUE_MAP_DATA = {
       "w": 29,
       "h": 30,
       "color": "#888888",
-      "collidable": false,
+      "collidable": true,
       "info": ""
     },
     {
@@ -612,7 +612,7 @@ const PROLOGUE_MAP_DATA = {
       "w": 29,
       "h": 30,
       "color": "#888888",
-      "collidable": false,
+      "collidable": true,
       "info": ""
     },
     {
@@ -625,7 +625,7 @@ const PROLOGUE_MAP_DATA = {
       "w": 29,
       "h": 30,
       "color": "#888888",
-      "collidable": false,
+      "collidable": true,
       "info": ""
     },
     {
@@ -638,7 +638,7 @@ const PROLOGUE_MAP_DATA = {
       "w": 31,
       "h": 14,
       "color": "#888888",
-      "collidable": false,
+      "collidable": true,
       "info": ""
     },
     {
@@ -651,7 +651,7 @@ const PROLOGUE_MAP_DATA = {
       "w": 31,
       "h": 14,
       "color": "#888888",
-      "collidable": false,
+      "collidable": true,
       "info": ""
     },
     {
@@ -664,7 +664,7 @@ const PROLOGUE_MAP_DATA = {
       "w": 25,
       "h": 34,
       "color": "#888888",
-      "collidable": false,
+      "collidable": true,
       "info": ""
     },
     {
@@ -677,7 +677,7 @@ const PROLOGUE_MAP_DATA = {
       "w": 25,
       "h": 34,
       "color": "#888888",
-      "collidable": false,
+      "collidable": true,
       "info": ""
     },
     {
@@ -690,7 +690,7 @@ const PROLOGUE_MAP_DATA = {
       "w": 9,
       "h": 6,
       "color": "#888888",
-      "collidable": false,
+      "collidable": true,
       "info": ""
     },
     {
@@ -703,7 +703,7 @@ const PROLOGUE_MAP_DATA = {
       "w": 9,
       "h": 6,
       "color": "#888888",
-      "collidable": false,
+      "collidable": true,
       "info": ""
     },
     {
@@ -716,7 +716,7 @@ const PROLOGUE_MAP_DATA = {
       "w": 9,
       "h": 6,
       "color": "#888888",
-      "collidable": false,
+      "collidable": true,
       "info": ""
     },
     {
@@ -729,7 +729,7 @@ const PROLOGUE_MAP_DATA = {
       "w": 9,
       "h": 6,
       "color": "#888888",
-      "collidable": false,
+      "collidable": true,
       "info": ""
     },
     {
@@ -742,7 +742,7 @@ const PROLOGUE_MAP_DATA = {
       "w": 9,
       "h": 6,
       "color": "#888888",
-      "collidable": false,
+      "collidable": true,
       "info": ""
     },
     {
@@ -755,7 +755,7 @@ const PROLOGUE_MAP_DATA = {
       "w": 6,
       "h": 9,
       "color": "#888888",
-      "collidable": false,
+      "collidable": true,
       "info": ""
     },
     {
@@ -768,7 +768,7 @@ const PROLOGUE_MAP_DATA = {
       "w": 9,
       "h": 9,
       "color": "#888888",
-      "collidable": false,
+      "collidable": true,
       "info": ""
     },
     {
@@ -781,7 +781,7 @@ const PROLOGUE_MAP_DATA = {
       "w": 9,
       "h": 9,
       "color": "#888888",
-      "collidable": false,
+      "collidable": true,
       "info": ""
     },
     {
@@ -1301,7 +1301,7 @@ const PROLOGUE_MAP_DATA = {
       "w": 30,
       "h": 30,
       "color": "#888888",
-      "collidable": false,
+      "collidable": true,
       "info": ""
     },
     {
@@ -1314,7 +1314,7 @@ const PROLOGUE_MAP_DATA = {
       "w": 30,
       "h": 30,
       "color": "#888888",
-      "collidable": false,
+      "collidable": true,
       "info": ""
     },
     {
@@ -1327,7 +1327,7 @@ const PROLOGUE_MAP_DATA = {
       "w": 30,
       "h": 30,
       "color": "#888888",
-      "collidable": false,
+      "collidable": true,
       "info": ""
     },
     {
@@ -1340,7 +1340,7 @@ const PROLOGUE_MAP_DATA = {
       "w": 30,
       "h": 30,
       "color": "#888888",
-      "collidable": false,
+      "collidable": true,
       "info": ""
     },
     {
@@ -1737,15 +1737,15 @@ class PrologueScene extends Phaser.Scene {
         ? this.add.image(o.x, o.y, icon.key).setDisplaySize(icon.w, icon.h).setDepth(o.y)
         : this.add.rectangle(o.x, o.y, 46, 46, o.color).setStrokeStyle(2, 0xf5e2c8).setDepth(o.y);
       this.physics.add.existing(rect, true);
+      // Static bodies default to the texture's native size, not the
+      // setDisplaySize() applied above - resync so the collision box
+      // matches what's actually drawn (important for tightly-cropped art).
+      if (rect.body && rect.body.updateFromGameObject) rect.body.updateFromGameObject();
       this.questObstacles.push(rect);
-      const check = this.add.text(o.x, o.y, '✓', {
-        fontFamily: '"Tildunk", sans-serif', fontSize: 22, color: '#3c7a3e', fontStyle: 'bold'
-      }).setOrigin(0.5).setVisible(false).setDepth(o.y + 1);
       o.found = false;
       o.rect = rect;
-      o.check = check;
       o.promptY = o.y - (icon ? icon.h / 2 : 23) - 12; // just above the icon's top edge
-      return { rect, check };
+      return { rect };
     });
     this.physics.add.collider(this.player, this.questObstacles);
 
@@ -1753,9 +1753,12 @@ class PrologueScene extends Phaser.Scene {
     // Everything in PROLOGUE_MAP_DATA.objects that isn't a landmark above:
     // purely visual, except collidable ones also get a static physics body
     // so the player can't just walk through a house or a bench.
+    // Streetlights (obj_lamp_1) are handled separately below - a lamp post
+    // is tall and thin, so it needs its own base-only collider and a
+    // Y-sorted depth instead of the generic whole-sprite treatment here.
     this.decorObstacles = [];
     PROLOGUE_MAP_DATA.objects
-      .filter(o => !PROLOGUE_QUEST_KEYS.includes(o.key))
+      .filter(o => !PROLOGUE_QUEST_KEYS.includes(o.key) && o.key !== 'obj_lamp_1')
       .forEach(o => {
         const hasImage = this.textures.exists(o.key);
         let vis;
@@ -1770,6 +1773,36 @@ class PrologueScene extends Phaser.Scene {
           this.decorObstacles.push(vis);
         }
       });
+
+    // --- streetlights ---
+    // The pole is thin and the lamp fixture up top overhangs empty space,
+    // so only the foot planted in the ground blocks movement - the player
+    // can walk right up next to (and visually behind/in front of) the pole
+    // itself. this.lampSprites feeds the per-frame Y-sort in update(): when
+    // Hiraya is above the lamp's base she's tucked behind the post (lamp
+    // drawn over her), and once she's stepped past its base she's drawn
+    // over it, same as walking past any other tall object.
+    this.lampSprites = [];
+    PROLOGUE_MAP_DATA.objects
+      .filter(o => o.key === 'obj_lamp_1')
+      .forEach(o => {
+        const hasImage = this.textures.exists(o.key);
+        const vis = hasImage
+          ? this.add.image(o.x, o.y, o.key).setDisplaySize(o.w, o.h)
+          : this.add.rectangle(o.x, o.y, o.w, o.h, hexToInt(o.color, 0x888888));
+        const baseY = o.y + o.h / 2; // ground level - where the post's foot sits
+        vis.setDepth(baseY);
+        this.lampSprites.push({ vis, baseY });
+
+        // Small invisible collider just for the foot of the post - roughly
+        // a third of the sprite's width, tall enough to stop the player
+        // walking straight through the base without blocking the open
+        // ground under the overhanging lamp fixture above it.
+        const base = this.add.rectangle(o.x, baseY - 7, o.w * 0.4, 14, 0x000000, 0).setVisible(false);
+        this.physics.add.existing(base, true);
+        this.decorObstacles.push(base);
+      });
+
     this.physics.add.collider(this.player, this.decorObstacles);
 
     // 4th task - not a findable object, just walking back to report to Lola
@@ -1875,7 +1908,7 @@ class PrologueScene extends Phaser.Scene {
   // objects, plus a 4th "Report to Lola Nena" task that only appears once
   // all 3 have been found (goes 3/3 -> 3/4, then 4/4 once you talk to her).
   getTaskList() {
-    const list = this.objects.map(o => ({ name: o.name, found: o.found, info: o.info, type: 'item' }));
+    const list = this.objects.map(o => ({ name: o.name, found: o.found, info: o.info, iconKey: getObjectIconKey(this, o), type: 'item' }));
     if (this.objects.every(o => o.found)) {
       list.push({
         name: 'Report to Lola Nena',
@@ -1919,6 +1952,14 @@ class PrologueScene extends Phaser.Scene {
   }
 
   update() {
+    // Y-sort each streetlight against the player every frame: above the
+    // post's base, Hiraya is drawn under the lamp (walking "behind" it);
+    // once she's past its base, she's drawn over it, same as passing any
+    // other tall object. See the lampSprites setup in create() above.
+    this.lampSprites.forEach(l => {
+      l.vis.setDepth(this.player.y < l.baseY ? this.player.depth + 1 : l.baseY);
+    });
+
     // interaction prompt + key handling
     if (!this.locked) {
       const nearest = this.nearestInteractable();
@@ -1992,8 +2033,8 @@ class PrologueScene extends Phaser.Scene {
 
     this.objects.forEach(o => {
       if (o.found) return;
-      const d = Phaser.Math.Distance.Between(p.x, p.y, o.x, o.y);
-      if (d < bestDist) { best = { type: 'object', obj: o }; bestDist = d; }
+      const d = interactGapToObject(p, o.rect);
+      if (d < OBJECT_INTERACT_REACH && d < bestDist) { best = { type: 'object', obj: o }; bestDist = d; }
     });
 
     return best;
@@ -2001,17 +2042,17 @@ class PrologueScene extends Phaser.Scene {
 
   interactWithObject(o) {
     this.locked = true;
-    showInfoPopup(this, o.name.toUpperCase(), o.info, () => {
+    showFoundItemPopup(this, o, () => {
       o.found = true;
       // setAlpha works on both the Image (real icon) and the Rectangle
       // (fallback if an icon ever fails to load) - setFillStyle only
       // exists on the latter, so it can't be used here anymore.
       o.rect.setAlpha(0.45);
-      o.check.setVisible(true);
       this.updateProgress();
       this.locked = false;
       if (this.objects.every(x => x.found)) {
         this.returnFlag.setVisible(true);
+        showToast(this, 'Talk to Lola Nena');
       }
     });
   }
@@ -2077,7 +2118,13 @@ class PrologueScene extends Phaser.Scene {
 
   showFinalScreen() {
     const { width, height } = this.scale;
-    const container = this.add.container(0, 0).setDepth(2000).setScrollFactor(0).setAlpha(0);
+    // The title card has to sit above everything in the plaza. Hiraya is at
+    // depth 10000 and each streetlight is bumped to player.depth + 1 while
+    // she's above its base (see update()), so the old depth of 2000 let her
+    // and the two lamps beside her draw straight over the card. 20000 clears
+    // them (and the 11000 curtain / 10500 modals).
+    const FINAL_DEPTH = 20000;
+    const container = this.add.container(0, 0).setDepth(FINAL_DEPTH).setScrollFactor(0).setAlpha(0);
     const bg = this.add.rectangle(width / 2, height / 2, width, height, 0x1d1f24, 1);
     const title = this.add.text(width / 2, height / 2 - 40,
       'History survives when stories\nare remembered and passed on.', {
@@ -2095,8 +2142,8 @@ class PrologueScene extends Phaser.Scene {
       const { rect, txt } = createButton(this, width / 2, height / 2 + 120, 'Back to Menu', () => {
         this.scene.start('Menu');
       }, { width: 220, height: 46, fontSize: 16, color: 0x3c7a3e, hoverColor: 0x4c9a4e });
-      rect.setScrollFactor(0).setDepth(2001).setAlpha(0);
-      txt.setScrollFactor(0).setDepth(2002).setAlpha(0);
+      rect.setScrollFactor(0).setDepth(FINAL_DEPTH + 1).setAlpha(0);
+      txt.setScrollFactor(0).setDepth(FINAL_DEPTH + 2).setAlpha(0);
       this.tweens.add({ targets: [rect, txt], alpha: 1, duration: 400 });
     });
   }
@@ -2160,11 +2207,11 @@ showObjectivesModal() {
     tasks.forEach((o, i) => {
       const y = top + headerH + i * rowH;
       const found = o.found;
-      const mark = this.add.text(width / 2 - 150, y, found ? '✓' : '—', {
+      const mark = this.add.text(width / 2 - 172, y, found ? '✓' : '—', {
         fontFamily: '"Tildunk", sans-serif', fontSize: 16, fontStyle: 'bold',
         color: found ? '#3c7a3e' : '#9aa0aa'
       }).setOrigin(0, 0.5);
-      const label = this.add.text(width / 2 - 122, y, o.type === 'task' ? o.name : `${o.name} x1`, {
+      const label = this.add.text(width / 2 - 118, y, o.type === 'task' ? o.name : (found ? o.name : '???'), {
         fontFamily: '"Tildunk", sans-serif', fontSize: 15,
         color: found ? '#3c7a3e' : '#3b2410'
       }).setOrigin(0, 0.5);
@@ -2175,6 +2222,7 @@ showObjectivesModal() {
         color: found ? '#3c7a3e' : '#9aa0aa'
       }).setOrigin(1, 0.5);
       container.add([mark, label, status]);
+      if (o.type !== 'task') addTaskRowIcon(this, container, width / 2 - 140, y, o.iconKey, found);
 
       if (found) {
         const hitZone = this.add.rectangle(width / 2, y, 356, rowH, 0xffffff, 0.001)

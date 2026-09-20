@@ -263,9 +263,6 @@ class Chapter2Scene extends Phaser.Scene {
       p.mark = this.add.text(p.x, p.y, '?', {
         fontFamily: '"Tildunk", sans-serif', fontSize: 22, color: '#fff8e7', fontStyle: 'bold'
       }).setOrigin(0.5);
-      p.check = this.add.text(p.x, p.y, '✓', {
-        fontFamily: '"Tildunk", sans-serif', fontSize: 22, color: '#ffffff', fontStyle: 'bold'
-      }).setOrigin(0.5).setVisible(false);
     });
     this.physics.add.collider(this.player, this.plotObstacles);
 
@@ -415,7 +412,7 @@ showObjectivesModal() {
         fontFamily: '"Tildunk", sans-serif', fontSize: 16, fontStyle: 'bold',
         color: found ? '#3c7a3e' : '#9aa0aa'
       }).setOrigin(0, 0.5);
-      const label = this.add.text(width / 2 - 122, y, t.type === 'task' ? t.name : `${t.name} x1`, {
+      const label = this.add.text(width / 2 - 122, y, t.type === 'task' ? t.name : (found ? `${t.name} x1` : '??? x1'), {
         fontFamily: '"Tildunk", sans-serif', fontSize: 15,
         color: found ? '#3c7a3e' : '#3b2410'
       }).setOrigin(0, 0.5);
@@ -499,14 +496,23 @@ showJournalModal() {
 
   nearestInteractable() {
     const p = this.player;
-    let best = null, bestDist = INTERACT_RADIUS;
+    let best = null, bestDist = Infinity;
 
     const dDon = Phaser.Math.Distance.Between(p.x, p.y, this.donEmilio.x, this.donEmilio.y);
-    if (dDon < bestDist) { best = { type: 'don' }; bestDist = dDon; }
+    if (dDon <= INTERACT_RADIUS && dDon < bestDist) { best = { type: 'don' }; bestDist = dDon; }
 
     this.plots.forEach(plot => {
+      // Plot icons run as large as 152x160 (built) - much bigger than the
+      // 46x46 objects INTERACT_RADIUS (80) was tuned for. The player's solid
+      // collider stops well outside that fixed radius, especially
+      // approaching diagonally, so a flat 80px cutoff meant the "Press E"
+      // prompt never appeared and the plot just read as an unexplained wall
+      // blocking the way. Scale the reach out by the plot's own footprint
+      // so getting close enough to touch it is always close enough to
+      // interact with it.
+      const reach = INTERACT_RADIUS + Math.max(plot.rect.displayWidth || 0, plot.rect.displayHeight || 0) / 2;
       const d = Phaser.Math.Distance.Between(p.x, p.y, plot.x, plot.y);
-      if (d < bestDist) { best = { type: 'plot', plot }; bestDist = d; }
+      if (d <= reach && d < bestDist) { best = { type: 'plot', plot }; bestDist = d; }
     });
 
     return best;
@@ -816,7 +822,7 @@ showJournalModal() {
     this.locked = true;
     if (plot.built) {
       // Free to revisit anything already built - no risk, just a refresher.
-      showInfoPopup(this, plot.name.toUpperCase(), plot.info, () => { this.locked = false; });
+      showFoundItemPopup(this, plot, () => { this.locked = false; });
       return;
     }
     this.showBuildMenu(plot);
@@ -897,13 +903,13 @@ showJournalModal() {
       plot.rect.setFillStyle(plot.color, 0.85);
     }
     plot.mark.setVisible(false);
-    plot.check.setVisible(true);
     this.updateProgress();
 
-    showInfoPopup(this, plot.name.toUpperCase(), plot.info, () => {
+    showFoundItemPopup(this, plot, () => {
       this.locked = false;
       if (this.plots.every(p => p.built)) {
         this.returnFlag.setVisible(true);
+        showToast(this, 'Talk to Don Emilio');
       }
     });
   }

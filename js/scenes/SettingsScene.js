@@ -23,14 +23,14 @@ class SettingsScene extends Phaser.Scene {
 
     this.add.text(width / 2, 184, 'Music', labelStyle).setOrigin(0.5);
     this.makeOptionRow(
-      [['Off', 0], ['Low', 0.3], ['Normal', 0.6]],
+      [['Off', 0], ['Low', 0.3], ['Normal', 0.5]],
       width / 2, 220, 'musicVolume',
       (val) => SoundManager.setMusicVolume(this, val)
     );
 
     this.add.text(width / 2, 268, 'Sound Effects', labelStyle).setOrigin(0.5);
     this.makeOptionRow(
-      [['Off', 0], ['Low', 0.4], ['Normal', 0.8]],
+      [['Off', 0], ['Low', 0.4], ['Normal', 0.7]],
       width / 2, 304, 'sfxVolume',
       (val) => SoundManager.setSfxVolume(this, val)
     );
@@ -47,12 +47,23 @@ class SettingsScene extends Phaser.Scene {
   makeOptionRow(options, centerX, y, regKey, onSelect) {
     const spacing = 160;
     const startX = centerX - ((options.length - 1) * spacing) / 2;
-    const current = this.registry.get(regKey);
+    const stored = this.registry.get(regKey);
+    // Highlight the option closest to the stored value, so a value that
+    // doesn't exactly match one of the buttons (e.g. an older default) still
+    // shows a selection instead of leaving every button unhighlighted.
+    const current = stored === undefined
+      ? options[0][1]
+      : options.reduce((best, [, v]) => Math.abs(v - stored) < Math.abs(best - stored) ? v : best, options[0][1]);
     const buttons = [];
 
     options.forEach(([label, val], i) => {
       const x = startX + i * spacing;
-      const rect = this.add.rectangle(x, y, 130, 40, val === current ? 0x9c3b2e : 0x33363f, 1)
+      // 0x33363f (slate gray) is also this game's "locked/disabled" color
+      // elsewhere (see the Chapters list), so using it for an unselected-
+      // but-still-clickable option here made every non-active choice read
+      // as disabled. A warm brown keeps it clearly part of the wood/parchment
+      // UI instead of borrowing the "can't click this" color.
+      const rect = this.add.rectangle(x, y, 130, 40, val === current ? 0x9c3b2e : 0x6b4f30, 1)
         .setStrokeStyle(2, 0xf5e2c8)
         .setInteractive({ useHandCursor: true });
       this.add.text(x, y, String(label), {
@@ -62,7 +73,7 @@ class SettingsScene extends Phaser.Scene {
       rect.on('pointerdown', () => {
         SoundManager.play(this, 'click');
         this.registry.set(regKey, val);
-        buttons.forEach(b => b.rect.setFillStyle(b.val === val ? 0x9c3b2e : 0x33363f));
+        buttons.forEach(b => b.rect.setFillStyle(b.val === val ? 0x9c3b2e : 0x6b4f30));
         if (onSelect) onSelect(val);
       });
 

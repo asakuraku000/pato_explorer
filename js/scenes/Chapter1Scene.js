@@ -152,7 +152,7 @@ const CHAPTER1_MAP_DATA = {
       "w": 46,
       "h": 46,
       "color": "#8a5a3a",
-      "collidable": false,
+      "collidable": true,
       "info": "Riverside houses were built close to the water for easy trade and travel."
     },
     {
@@ -165,7 +165,7 @@ const CHAPTER1_MAP_DATA = {
       "w": 46,
       "h": 46,
       "color": "#c24a38",
-      "collidable": false,
+      "collidable": true,
       "info": "The embarcadero was a landing point where boats loaded and unloaded goods."
     },
     {
@@ -3657,15 +3657,15 @@ class Chapter1Scene extends Phaser.Scene {
         ? this.add.image(o.x, o.y, icon.key).setDisplaySize(icon.w, icon.h).setDepth(o.y)
         : this.add.rectangle(o.x, o.y, 46, 46, o.color).setStrokeStyle(2, 0xf5e2c8).setDepth(o.y);
       this.physics.add.existing(rect, true);
+      // Static bodies default to the texture's native size, not the
+      // setDisplaySize() applied above - resync so the collision box
+      // matches what's actually drawn (important for tightly-cropped art).
+      if (rect.body && rect.body.updateFromGameObject) rect.body.updateFromGameObject();
       this.questObstacles.push(rect);
-      const check = this.add.text(o.x, o.y, '✓', {
-        fontFamily: '"Tildunk", sans-serif', fontSize: 22, color: '#3c7a3e', fontStyle: 'bold'
-      }).setOrigin(0.5).setVisible(false).setDepth(o.y + 1);
       o.found = false;
       o.rect = rect;
-      o.check = check;
       o.promptY = o.y - (icon ? icon.h / 2 : 23) - 12; // just above the icon's top edge
-      return { rect, check };
+      return { rect };
     });
     this.physics.add.collider(this.player, this.questObstacles);
 
@@ -3776,7 +3776,7 @@ class Chapter1Scene extends Phaser.Scene {
   // objects, plus a 6th "Report to Lola Nena" task that only appears once
   // all 5 have been found (goes 5/5 -> 5/6, then 6/6 once you talk to her).
   getTaskList() {
-    const list = this.objects.map(o => ({ name: o.name, found: o.found, info: o.info, type: 'item' }));
+    const list = this.objects.map(o => ({ name: o.name, found: o.found, info: o.info, iconKey: getObjectIconKey(this, o), type: 'item' }));
     if (this.objects.every(o => o.found)) {
       list.push({
         name: 'Report to Lola Nena',
@@ -3794,7 +3794,7 @@ class Chapter1Scene extends Phaser.Scene {
     if (this.taskBtnTxt) this.taskBtnTxt.setText(`Task (${found}/${tasks.length})`);
   }
 
-  // --- Objectives modal: what to find, x1 each, highlighted once found ----
+  // --- Objectives modal: what to find, highlighted once found ----
   // Hovering a row that's already found pops up the info line learned from it.
 showObjectivesModal() {
      const { width, height } = this.scale;
@@ -3834,11 +3834,11 @@ showObjectivesModal() {
     tasks.forEach((o, i) => {
       const y = top + headerH + i * rowH;
       const found = o.found;
-      const mark = this.add.text(width / 2 - 150, y, found ? '✓' : '—', {
+      const mark = this.add.text(width / 2 - 172, y, found ? '✓' : '—', {
         fontFamily: '"Tildunk", sans-serif', fontSize: 16, fontStyle: 'bold',
         color: found ? '#3c7a3e' : '#9aa0aa'
       }).setOrigin(0, 0.5);
-      const label = this.add.text(width / 2 - 122, y, o.type === 'task' ? o.name : `${o.name} x1`, {
+      const label = this.add.text(width / 2 - 118, y, o.type === 'task' ? o.name : (found ? o.name : '???'), {
         fontFamily: '"Tildunk", sans-serif', fontSize: 15,
         color: found ? '#3c7a3e' : '#3b2410'
       }).setOrigin(0, 0.5);
@@ -3849,6 +3849,7 @@ showObjectivesModal() {
         color: found ? '#3c7a3e' : '#9aa0aa'
       }).setOrigin(1, 0.5);
       container.add([mark, label, status]);
+      if (o.type !== 'task') addTaskRowIcon(this, container, width / 2 - 140, y, o.iconKey, found);
 
       if (found) {
         const hitZone = this.add.rectangle(width / 2, y, 356, rowH, 0xffffff, 0.001)
@@ -3928,8 +3929,8 @@ showJournalModal() {
 
     this.objects.forEach(o => {
       if (o.found) return;
-      const d = Phaser.Math.Distance.Between(p.x, p.y, o.x, o.y);
-      if (d < bestDist) { best = { type: 'object', obj: o }; bestDist = d; }
+      const d = interactGapToObject(p, o.rect);
+      if (d < OBJECT_INTERACT_REACH && d < bestDist) { best = { type: 'object', obj: o }; bestDist = d; }
     });
 
     return best;
@@ -4301,17 +4302,17 @@ showJournalModal() {
 
   interactWithObject(o) {
     this.locked = true;
-    showInfoPopup(this, o.name.toUpperCase(), o.info, () => {
+    showFoundItemPopup(this, o, () => {
       o.found = true;
       // setAlpha works on both the Image (real icon) and the Rectangle
       // (fallback if an icon ever fails to load) - setFillStyle only
       // exists on the latter, so it can't be used here anymore.
       o.rect.setAlpha(0.45);
-      o.check.setVisible(true);
       this.updateProgress();
       this.locked = false;
       if (this.objects.every(x => x.found)) {
         this.returnFlag.setVisible(true);
+        showToast(this, 'Talk to Lola Nena');
       }
     });
   }

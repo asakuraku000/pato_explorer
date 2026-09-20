@@ -1,15 +1,87 @@
 const config = {
   type: Phaser.AUTO,
-  width: 960,
-  height: 540,
   parent: 'game-container',
   pixelArt: true,
+  // FIT keeps the 960x540 game resolution but scales the canvas to fill
+  // #game-container (see css/style.css), which is what makes fullscreen work.
+  scale: {
+    mode: Phaser.Scale.FIT,
+    autoCenter: Phaser.Scale.CENTER_BOTH,
+    width: 960,
+    height: 540
+  },
   physics: {
     default: 'arcade',
     arcade: { debug: false }
   },
   scene: [PreloadScene, MenuScene, AboutScene, SettingsScene, PrologueScene, GameScene, Chapter1Scene, Chapter2Scene, Chapter3Scene, Chapter4Scene, Chapter5Scene]
 };
+
+// Fullscreen button under the canvas. The whole page (<html>) goes
+// fullscreen rather than just the canvas, so DOM overlays appended to
+// document.body (e.g. the Chapter 5 matching activity) stay visible.
+// Exiting is done with the Esc key (browser built-in).
+function setupFullscreen(game) {
+  const root = document.documentElement;
+  const controls = document.getElementById('fs-controls');
+  const btn = document.getElementById('fs-btn');
+  const toast = document.getElementById('fs-toast');
+
+  const requestFs = root.requestFullscreen || root.webkitRequestFullscreen;
+  const fsAllowed = document.fullscreenEnabled || document.webkitFullscreenEnabled;
+
+  // e.g. iPhone Safari doesn't support fullscreen for normal pages
+  if (!requestFs || !fsAllowed) {
+    controls.style.display = 'none';
+    return;
+  }
+
+  const getFsElement = () => document.fullscreenElement || document.webkitFullscreenElement;
+
+  let toastTimer = null;
+  function showToast() {
+    toast.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => toast.classList.remove('show'), 2500);
+  }
+
+  btn.addEventListener('click', () => {
+    if (!getFsElement()) {
+      const result = requestFs.call(root);
+      if (result && result.catch) {
+        result.catch((err) => console.warn('Fullscreen request failed.', err));
+      }
+    }
+    // Drop focus so Space/Enter in the game never re-triggers this button.
+    btn.blur();
+  });
+
+  function onFullscreenChange() {
+    const active = !!getFsElement();
+    root.classList.toggle('is-fullscreen', active);
+    btn.blur();
+
+    // Re-fit the canvas to the new container size. A second pass shortly
+    // after covers browsers that finish resizing the window a bit late; the
+    // resize event also lets DOM overlays (Chapter 5) re-align themselves.
+    game.scale.refresh();
+    setTimeout(() => {
+      game.scale.refresh();
+      window.dispatchEvent(new Event('resize'));
+    }, 150);
+
+    if (active) showToast();
+    else toast.classList.remove('show');
+  }
+
+  document.addEventListener('fullscreenchange', onFullscreenChange);
+  document.addEventListener('webkitfullscreenchange', onFullscreenChange);
+}
+
+function startGame() {
+  const game = new Phaser.Game(config);
+  setupFullscreen(game);
+}
 
 // Canvas text (which is how every Phaser text object gets drawn) doesn't
 // wait for @font-face the way DOM text does - if the game starts before the
@@ -26,9 +98,9 @@ const tildunkFont = new FontFace(
 tildunkFont.load()
   .then((loadedFace) => {
     document.fonts.add(loadedFace);
-    new Phaser.Game(config);
+    startGame();
   })
   .catch((err) => {
     console.warn('Tildunk font failed to load, starting with fallback fonts.', err);
-    new Phaser.Game(config);
+    startGame();
   });

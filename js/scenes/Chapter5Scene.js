@@ -8,18 +8,27 @@ const C5_FRAME_H = 78;
 // ============================================================================
 // Chapter 5 - "A Living Heritage"
 // ----------------------------------------------------------------------------
-// Per the story doc, this is the present-day chapter and it deliberately
-// drops the "walk around and find things" loop every other chapter uses.
-// Amihan/Hiraya meets two people instead of one - Ate Clara (keeper of the
-// old traditions) and Maya (the younger generation) - and the whole chapter
-// is: greeting dialogue -> one matching mini-game ("Keep the Story Alive")
-// -> a 3-question quiz -> Journal Page #5 -> a short closing scene that
-// wraps up the whole game (the doc's "FINAL GAME - Restore the Journal").
+// Per the story doc, this is the present-day chapter. Amihan/Hiraya meets
+// two people instead of one - Ate Clara (keeper of the old traditions) and
+// Maya (the younger generation) - and the chapter now runs: greeting
+// dialogue -> a short "walk around the plaza and find it" explore beat
+// (see CHAPTER5_EXPLORE_SPOTS below) -> walk back and report to Ate Clara
+// and Maya (same "report back" step Chapter 1 has with Lola) -> one matching
+// mini-game ("Keep the Story Alive") -> the Ask Well mini-game -> a 3-question quiz -> Journal
+// Page #5 -> a short closing scene that wraps up the whole game (the doc's
+// "FINAL GAME - Restore the Journal").
 //
 // The matching mini-game cards are still placeholder flat-color/DOM
 // elements, same approach as Chapter 3/4. Ate Clara and Maya now have real
 // sprites and dialogue portraits (see PreloadScene.js) - drop in real
 // mini-game card art later and none of the logic here needs to change.
+//
+// The four traditions (Alfombra, Balut, Pandangguhan, Santa Marta) also have
+// real icon art - assets/icons/ch5-<key>.png, see CHAPTER5_ICON_PATH below.
+// It shows up in the "found it" popup, next to each row of the Task panel,
+// on the matching-game term cards, and now as the on-map sprite for each
+// explore landmark too. If a PNG is missing, every one of those places
+// quietly falls back to the old text-only/tent-sprite look.
 // ============================================================================
 
 // ---------------------------------------------------------------------------
@@ -86,38 +95,38 @@ const CHAPTER5_MAP_DATA = {
     }
   },
   "tiles": [
-    "555555555555555555555555555555555555555555555555",
-    "500000660000000000000006600000000000004222224005",
-    "500000660000000000000006600000000000004222224005",
-    "500000660000000000000006600000000000004444444005",
-    "500000660000000000000006600000000000000000000005",
-    "500000660000000000000006600000000000000000000005",
-    "500000660000000000000006600000000000000000000005",
-    "500000660000000000000006600000000000000000000005",
-    "500000660000000000000006600000000000000000000005",
-    "500000660000000000000006600000000000000000000005",
-    "500000660000000000000006600000000000000000000005",
-    "500000660000000000000006600000000000000000000005",
-    "500000660000000000000006600000000000006666666665",
-    "500000660000000000000006600000000000006666666665",
-    "500000660000000000000006600000000000006600000005",
-    "500000660000000000000006600000000000006600000005",
-    "500000660000000000000006600000000000006600000005",
-    "500000660000000000000006600000000000006600000005",
-    "500000660000000000000006600000000000006600000005",
-    "500000660000000000000006600000000000006600000005",
-    "500000660000000666666666666666666000006600000005",
-    "500000660000000666666666666666666000006600000005",
-    "500000660000000666666666666666666000006600000005",
-    "500000660000000666666666666666666000006600000005",
-    "500000660000000666666666666666666000006600000005",
-    "566666660000000666666666666666666000006666666665",
-    "566666660000000666666666666666666000006666666665",
-    "500000000000000666666666666666666000000000000005",
-    "500000000000000666666666666666666000000000000005",
-    "500000000000000666666666666666666000000000000005",
-    "500000000000000000000006600000000000000000000005",
-    "555555555555555555555555555555555555555555555555"
+    "222222222222222224400500000000000000000000000000",
+    "444444444444444444400006600000000000004222224000",
+    "600000660000000000000006600000000000004222224000",
+    "600000660000000000000006600000000000004444444000",
+    "600000660000000000000006600000000000000000000000",
+    "600000660000000000000006600000000000000000000000",
+    "600000660000000000000006600000000000000000000000",
+    "600000660000000000000006600000000000000000000000",
+    "600000660000000000000006600000000000000000000000",
+    "600000660000000000000006600000000000000000000000",
+    "600000660000000000000006600000000000000000000000",
+    "600000666666666666666666600000000000000000000000",
+    "600000666666666666666666600000000000006666666666",
+    "600000660000000000000006600000000000006666666666",
+    "600000660000000000000006600000000000006600000006",
+    "600000660000000000000006600000000000006600000006",
+    "600000660000000000000006600000000000006600000006",
+    "600000660000000000000006600000000000006600000006",
+    "600000660000000000000006600000000000006600000006",
+    "600000660000000000000006600000000000006600000006",
+    "600000660000000666666666666666666000006600000006",
+    "600000660000000666666666666666666000006600000006",
+    "600000666666666666666666666666666666666600000006",
+    "600000666666666666666666666666666666666666666666",
+    "600000666666666666666666666666666666666666666666",
+    "666666660000000666666666666666666000036666666663",
+    "666666660000000666666666666666666000036666666663",
+    "000000000000000666666666666666666000036666666663",
+    "000000000000000666666666666666666000036633333663",
+    "000000000000000666666666666666666000036636663663",
+    "000000000000000000000006600000000000036636663663",
+    "000000000000000000000006600000000000033333333333"
   ],
   "objects": [
     {
@@ -186,32 +195,6 @@ const CHAPTER5_MAP_DATA = {
       "info": ""
     },
     {
-      "key": "obj_house_2",
-      "name": "House 2",
-      "col": 15,
-      "row": 18,
-      "x": 496,
-      "y": 592,
-      "w": 156,
-      "h": 135,
-      "color": "#888888",
-      "collidable": true,
-      "info": ""
-    },
-    {
-      "key": "obj_house_4",
-      "name": "House 4",
-      "col": 12,
-      "row": 22,
-      "x": 400,
-      "y": 720,
-      "w": 154,
-      "h": 149,
-      "color": "#888888",
-      "collidable": true,
-      "info": ""
-    },
-    {
       "key": "obj_plant_14",
       "name": "Plants 14",
       "col": 22,
@@ -267,45 +250,6 @@ const CHAPTER5_MAP_DATA = {
       "key": "obj_plant_16",
       "name": "Plants 16",
       "col": 33,
-      "row": 22,
-      "x": 1072,
-      "y": 720,
-      "w": 35,
-      "h": 47,
-      "color": "#888888",
-      "collidable": false,
-      "info": ""
-    },
-    {
-      "key": "obj_plant_16",
-      "name": "Plants 16",
-      "col": 33,
-      "row": 23,
-      "x": 1072,
-      "y": 752,
-      "w": 35,
-      "h": 47,
-      "color": "#888888",
-      "collidable": false,
-      "info": ""
-    },
-    {
-      "key": "obj_plant_16",
-      "name": "Plants 16",
-      "col": 33,
-      "row": 24,
-      "x": 1072,
-      "y": 784,
-      "w": 35,
-      "h": 47,
-      "color": "#888888",
-      "collidable": false,
-      "info": ""
-    },
-    {
-      "key": "obj_plant_16",
-      "name": "Plants 16",
-      "col": 33,
       "row": 25,
       "x": 1072,
       "y": 816,
@@ -322,32 +266,6 @@ const CHAPTER5_MAP_DATA = {
       "row": 26,
       "x": 1072,
       "y": 848,
-      "w": 35,
-      "h": 47,
-      "color": "#888888",
-      "collidable": false,
-      "info": ""
-    },
-    {
-      "key": "obj_plant_16",
-      "name": "Plants 16",
-      "col": 22,
-      "row": 1,
-      "x": 720,
-      "y": 48,
-      "w": 35,
-      "h": 47,
-      "color": "#888888",
-      "collidable": false,
-      "info": ""
-    },
-    {
-      "key": "obj_plant_16",
-      "name": "Plants 16",
-      "col": 20,
-      "row": 2,
-      "x": 656,
-      "y": 80,
       "w": 35,
       "h": 47,
       "color": "#888888",
@@ -374,97 +292,6 @@ const CHAPTER5_MAP_DATA = {
       "row": 6,
       "x": 624,
       "y": 208,
-      "w": 35,
-      "h": 47,
-      "color": "#888888",
-      "collidable": false,
-      "info": ""
-    },
-    {
-      "key": "obj_plant_16",
-      "name": "Plants 16",
-      "col": 20,
-      "row": 9,
-      "x": 656,
-      "y": 304,
-      "w": 35,
-      "h": 47,
-      "color": "#888888",
-      "collidable": false,
-      "info": ""
-    },
-    {
-      "key": "obj_plant_16",
-      "name": "Plants 16",
-      "col": 18,
-      "row": 13,
-      "x": 592,
-      "y": 432,
-      "w": 35,
-      "h": 47,
-      "color": "#888888",
-      "collidable": false,
-      "info": ""
-    },
-    {
-      "key": "obj_plant_16",
-      "name": "Plants 16",
-      "col": 21,
-      "row": 13,
-      "x": 688,
-      "y": 432,
-      "w": 35,
-      "h": 47,
-      "color": "#888888",
-      "collidable": false,
-      "info": ""
-    },
-    {
-      "key": "obj_plant_16",
-      "name": "Plants 16",
-      "col": 27,
-      "row": 1,
-      "x": 880,
-      "y": 48,
-      "w": 35,
-      "h": 47,
-      "color": "#888888",
-      "collidable": false,
-      "info": ""
-    },
-    {
-      "key": "obj_plant_16",
-      "name": "Plants 16",
-      "col": 29,
-      "row": 3,
-      "x": 944,
-      "y": 112,
-      "w": 35,
-      "h": 47,
-      "color": "#888888",
-      "collidable": false,
-      "info": ""
-    },
-    {
-      "key": "obj_plant_16",
-      "name": "Plants 16",
-      "col": 26,
-      "row": 5,
-      "x": 848,
-      "y": 176,
-      "w": 35,
-      "h": 47,
-      "color": "#888888",
-      "collidable": false,
-      "info": ""
-    },
-    {
-      "key": "obj_plant_16",
-      "name": "Plants 16",
-      "col": 29,
-      "row": 7,
-      "x": 944,
-      "y": 240,
       "w": 35,
       "h": 47,
       "color": "#888888",
@@ -565,19 +392,6 @@ const CHAPTER5_MAP_DATA = {
     {
       "key": "obj_shadow_4",
       "name": "Shadow 4",
-      "col": 22,
-      "row": 8,
-      "x": 720,
-      "y": 272,
-      "w": 44,
-      "h": 37,
-      "color": "#888888",
-      "collidable": false,
-      "info": ""
-    },
-    {
-      "key": "obj_shadow_4",
-      "name": "Shadow 4",
       "col": 17,
       "row": 8,
       "x": 560,
@@ -631,9 +445,9 @@ const CHAPTER5_MAP_DATA = {
       "key": "obj_house_1",
       "name": "House 1",
       "col": 43,
-      "row": 18,
+      "row": 17,
       "x": 1392,
-      "y": 592,
+      "y": 560,
       "w": 116,
       "h": 112,
       "color": "#888888",
@@ -644,9 +458,9 @@ const CHAPTER5_MAP_DATA = {
       "key": "obj_house_1",
       "name": "House 1",
       "col": 43,
-      "row": 21,
+      "row": 20,
       "x": 1392,
-      "y": 688,
+      "y": 656,
       "w": 116,
       "h": 112,
       "color": "#888888",
@@ -657,19 +471,6 @@ const CHAPTER5_MAP_DATA = {
       "key": "obj_plant_6",
       "name": "Plants 6",
       "col": 37,
-      "row": 12,
-      "x": 1200,
-      "y": 400,
-      "w": 13,
-      "h": 37,
-      "color": "#888888",
-      "collidable": false,
-      "info": ""
-    },
-    {
-      "key": "obj_plant_6",
-      "name": "Plants 6",
-      "col": 37,
       "row": 13,
       "x": 1200,
       "y": 432,
@@ -813,58 +614,6 @@ const CHAPTER5_MAP_DATA = {
       "key": "obj_plant_6",
       "name": "Plants 6",
       "col": 36,
-      "row": 23,
-      "x": 1168,
-      "y": 752,
-      "w": 13,
-      "h": 37,
-      "color": "#888888",
-      "collidable": false,
-      "info": ""
-    },
-    {
-      "key": "obj_plant_6",
-      "name": "Plants 6",
-      "col": 37,
-      "row": 22,
-      "x": 1200,
-      "y": 720,
-      "w": 13,
-      "h": 37,
-      "color": "#888888",
-      "collidable": false,
-      "info": ""
-    },
-    {
-      "key": "obj_plant_6",
-      "name": "Plants 6",
-      "col": 37,
-      "row": 23,
-      "x": 1200,
-      "y": 752,
-      "w": 13,
-      "h": 37,
-      "color": "#888888",
-      "collidable": false,
-      "info": ""
-    },
-    {
-      "key": "obj_plant_6",
-      "name": "Plants 6",
-      "col": 36,
-      "row": 22,
-      "x": 1168,
-      "y": 720,
-      "w": 13,
-      "h": 37,
-      "color": "#888888",
-      "collidable": false,
-      "info": ""
-    },
-    {
-      "key": "obj_plant_6",
-      "name": "Plants 6",
-      "col": 36,
       "row": 18,
       "x": 1168,
       "y": 592,
@@ -933,32 +682,6 @@ const CHAPTER5_MAP_DATA = {
       "row": 13,
       "x": 1168,
       "y": 432,
-      "w": 13,
-      "h": 37,
-      "color": "#888888",
-      "collidable": false,
-      "info": ""
-    },
-    {
-      "key": "obj_plant_6",
-      "name": "Plants 6",
-      "col": 36,
-      "row": 12,
-      "x": 1168,
-      "y": 400,
-      "w": 13,
-      "h": 37,
-      "color": "#888888",
-      "collidable": false,
-      "info": ""
-    },
-    {
-      "key": "obj_plant_6",
-      "name": "Plants 6",
-      "col": 35,
-      "row": 12,
-      "x": 1136,
-      "y": 400,
       "w": 13,
       "h": 37,
       "color": "#888888",
@@ -1096,64 +819,12 @@ const CHAPTER5_MAP_DATA = {
       "info": ""
     },
     {
-      "key": "obj_plant_6",
-      "name": "Plants 6",
-      "col": 35,
-      "row": 22,
-      "x": 1136,
-      "y": 720,
-      "w": 13,
-      "h": 37,
-      "color": "#888888",
-      "collidable": false,
-      "info": ""
-    },
-    {
-      "key": "obj_plant_6",
-      "name": "Plants 6",
-      "col": 35,
-      "row": 23,
-      "x": 1136,
-      "y": 752,
-      "w": 13,
-      "h": 37,
-      "color": "#888888",
-      "collidable": false,
-      "info": ""
-    },
-    {
       "key": "obj_plant_18",
       "name": "Plants 18",
       "col": 9,
-      "row": 3,
+      "row": 4,
       "x": 304,
-      "y": 112,
-      "w": 52,
-      "h": 130,
-      "color": "#888888",
-      "collidable": false,
-      "info": ""
-    },
-    {
-      "key": "obj_plant_18",
-      "name": "Plants 18",
-      "col": 9,
-      "row": 7,
-      "x": 304,
-      "y": 240,
-      "w": 52,
-      "h": 130,
-      "color": "#888888",
-      "collidable": false,
-      "info": ""
-    },
-    {
-      "key": "obj_plant_18",
-      "name": "Plants 18",
-      "col": 9,
-      "row": 11,
-      "x": 304,
-      "y": 368,
+      "y": 144,
       "w": 52,
       "h": 130,
       "color": "#888888",
@@ -1180,19 +851,6 @@ const CHAPTER5_MAP_DATA = {
       "row": 19,
       "x": 304,
       "y": 624,
-      "w": 52,
-      "h": 130,
-      "color": "#888888",
-      "collidable": false,
-      "info": ""
-    },
-    {
-      "key": "obj_plant_18",
-      "name": "Plants 18",
-      "col": 9,
-      "row": 23,
-      "x": 304,
-      "y": 752,
       "w": 52,
       "h": 130,
       "color": "#888888",
@@ -1294,19 +952,6 @@ const CHAPTER5_MAP_DATA = {
       "key": "obj_plant_3",
       "name": "Plants 3",
       "col": 11,
-      "row": 2,
-      "x": 368,
-      "y": 80,
-      "w": 12,
-      "h": 14,
-      "color": "#888888",
-      "collidable": false,
-      "info": ""
-    },
-    {
-      "key": "obj_plant_3",
-      "name": "Plants 3",
-      "col": 11,
       "row": 3,
       "x": 368,
       "y": 112,
@@ -1427,32 +1072,6 @@ const CHAPTER5_MAP_DATA = {
       "row": 3,
       "x": 400,
       "y": 112,
-      "w": 12,
-      "h": 14,
-      "color": "#888888",
-      "collidable": false,
-      "info": ""
-    },
-    {
-      "key": "obj_plant_3",
-      "name": "Plants 3",
-      "col": 12,
-      "row": 2,
-      "x": 400,
-      "y": 80,
-      "w": 12,
-      "h": 14,
-      "color": "#888888",
-      "collidable": false,
-      "info": ""
-    },
-    {
-      "key": "obj_plant_3",
-      "name": "Plants 3",
-      "col": 13,
-      "row": 2,
-      "x": 432,
-      "y": 80,
       "w": 12,
       "h": 14,
       "color": "#888888",
@@ -1596,110 +1215,6 @@ const CHAPTER5_MAP_DATA = {
       "row": 3,
       "x": 464,
       "y": 112,
-      "w": 12,
-      "h": 14,
-      "color": "#888888",
-      "collidable": false,
-      "info": ""
-    },
-    {
-      "key": "obj_plant_3",
-      "name": "Plants 3",
-      "col": 14,
-      "row": 2,
-      "x": 464,
-      "y": 80,
-      "w": 12,
-      "h": 14,
-      "color": "#888888",
-      "collidable": false,
-      "info": ""
-    },
-    {
-      "key": "obj_plant_3",
-      "name": "Plants 3",
-      "col": 14,
-      "row": 1,
-      "x": 464,
-      "y": 48,
-      "w": 12,
-      "h": 14,
-      "color": "#888888",
-      "collidable": false,
-      "info": ""
-    },
-    {
-      "key": "obj_plant_3",
-      "name": "Plants 3",
-      "col": 13,
-      "row": 1,
-      "x": 432,
-      "y": 48,
-      "w": 12,
-      "h": 14,
-      "color": "#888888",
-      "collidable": false,
-      "info": ""
-    },
-    {
-      "key": "obj_plant_3",
-      "name": "Plants 3",
-      "col": 13,
-      "row": 1,
-      "x": 432,
-      "y": 48,
-      "w": 12,
-      "h": 14,
-      "color": "#888888",
-      "collidable": false,
-      "info": ""
-    },
-    {
-      "key": "obj_plant_3",
-      "name": "Plants 3",
-      "col": 11,
-      "row": 1,
-      "x": 368,
-      "y": 48,
-      "w": 12,
-      "h": 14,
-      "color": "#888888",
-      "collidable": false,
-      "info": ""
-    },
-    {
-      "key": "obj_plant_3",
-      "name": "Plants 3",
-      "col": 12,
-      "row": 1,
-      "x": 400,
-      "y": 48,
-      "w": 12,
-      "h": 14,
-      "color": "#888888",
-      "collidable": false,
-      "info": ""
-    },
-    {
-      "key": "obj_plant_3",
-      "name": "Plants 3",
-      "col": 15,
-      "row": 1,
-      "x": 496,
-      "y": 48,
-      "w": 12,
-      "h": 14,
-      "color": "#888888",
-      "collidable": false,
-      "info": ""
-    },
-    {
-      "key": "obj_plant_3",
-      "name": "Plants 3",
-      "col": 15,
-      "row": 2,
-      "x": 496,
-      "y": 80,
       "w": 12,
       "h": 14,
       "color": "#888888",
@@ -1902,58 +1417,6 @@ const CHAPTER5_MAP_DATA = {
       "info": ""
     },
     {
-      "key": "obj_decor_3",
-      "name": "Decor 3",
-      "col": 20,
-      "row": 11,
-      "x": 656,
-      "y": 368,
-      "w": 40,
-      "h": 40,
-      "color": "#888888",
-      "collidable": false,
-      "info": ""
-    },
-    {
-      "key": "obj_decor_3",
-      "name": "Decor 3",
-      "col": 19,
-      "row": 11,
-      "x": 624,
-      "y": 368,
-      "w": 40,
-      "h": 40,
-      "color": "#888888",
-      "collidable": false,
-      "info": ""
-    },
-    {
-      "key": "obj_shadow_4",
-      "name": "Shadow 4",
-      "col": 44,
-      "row": 28,
-      "x": 1424,
-      "y": 912,
-      "w": 44,
-      "h": 37,
-      "color": "#888888",
-      "collidable": false,
-      "info": ""
-    },
-    {
-      "key": "obj_shadow_4",
-      "name": "Shadow 4",
-      "col": 41,
-      "row": 29,
-      "x": 1328,
-      "y": 944,
-      "w": 44,
-      "h": 37,
-      "color": "#888888",
-      "collidable": false,
-      "info": ""
-    },
-    {
       "key": "obj_shadow_4",
       "name": "Shadow 4",
       "col": 37,
@@ -1986,19 +1449,6 @@ const CHAPTER5_MAP_DATA = {
       "row": 19,
       "x": 1296,
       "y": 624,
-      "w": 44,
-      "h": 37,
-      "color": "#888888",
-      "collidable": false,
-      "info": ""
-    },
-    {
-      "key": "obj_shadow_4",
-      "name": "Shadow 4",
-      "col": 44,
-      "row": 24,
-      "x": 1424,
-      "y": 784,
       "w": 44,
       "h": 37,
       "color": "#888888",
@@ -2177,10 +1627,10 @@ const CHAPTER5_MAP_DATA = {
     {
       "key": "obj_tent_3",
       "name": "Tent 3",
-      "col": 31,
-      "row": 29,
-      "x": 1008,
-      "y": 944,
+      "col": 42,
+      "row": 30,
+      "x": 1360,
+      "y": 976,
       "w": 65,
       "h": 62,
       "color": "#888888",
@@ -2190,10 +1640,10 @@ const CHAPTER5_MAP_DATA = {
     {
       "key": "obj_tent_1",
       "name": "Tent 1",
-      "col": 28,
-      "row": 29,
-      "x": 912,
-      "y": 944,
+      "col": 9,
+      "row": 9,
+      "x": 304,
+      "y": 304,
       "w": 73,
       "h": 65,
       "color": "#888888",
@@ -2203,10 +1653,10 @@ const CHAPTER5_MAP_DATA = {
     {
       "key": "obj_tent_2",
       "name": "Tent 2",
-      "col": 21,
-      "row": 29,
-      "x": 688,
-      "y": 944,
+      "col": 26,
+      "row": 6,
+      "x": 848,
+      "y": 208,
       "w": 64,
       "h": 61,
       "color": "#888888",
@@ -2216,27 +1666,14 @@ const CHAPTER5_MAP_DATA = {
     {
       "key": "obj_tent_3",
       "name": "Tent 3",
-      "col": 17,
-      "row": 29,
-      "x": 560,
-      "y": 944,
+      "col": 16,
+      "row": 25,
+      "x": 528,
+      "y": 816,
       "w": 65,
       "h": 62,
       "color": "#888888",
       "collidable": true,
-      "info": ""
-    },
-    {
-      "key": "obj_decor_8",
-      "name": "Decor 8",
-      "col": 19,
-      "row": 29,
-      "x": 624,
-      "y": 944,
-      "w": 28,
-      "h": 42,
-      "color": "#888888",
-      "collidable": false,
       "info": ""
     },
     {
@@ -2320,71 +1757,6 @@ const CHAPTER5_MAP_DATA = {
     {
       "key": "obj_plant_14",
       "name": "Plants 14",
-      "col": 5,
-      "row": 1,
-      "x": 176,
-      "y": 48,
-      "w": 23,
-      "h": 33,
-      "color": "#888888",
-      "collidable": false,
-      "info": ""
-    },
-    {
-      "key": "obj_plant_14",
-      "name": "Plants 14",
-      "col": 1,
-      "row": 1,
-      "x": 48,
-      "y": 48,
-      "w": 23,
-      "h": 33,
-      "color": "#888888",
-      "collidable": false,
-      "info": ""
-    },
-    {
-      "key": "obj_plant_14",
-      "name": "Plants 14",
-      "col": 2,
-      "row": 1,
-      "x": 80,
-      "y": 48,
-      "w": 23,
-      "h": 33,
-      "color": "#888888",
-      "collidable": false,
-      "info": ""
-    },
-    {
-      "key": "obj_plant_14",
-      "name": "Plants 14",
-      "col": 3,
-      "row": 1,
-      "x": 112,
-      "y": 48,
-      "w": 23,
-      "h": 33,
-      "color": "#888888",
-      "collidable": false,
-      "info": ""
-    },
-    {
-      "key": "obj_plant_14",
-      "name": "Plants 14",
-      "col": 4,
-      "row": 1,
-      "x": 144,
-      "y": 48,
-      "w": 23,
-      "h": 33,
-      "color": "#888888",
-      "collidable": false,
-      "info": ""
-    },
-    {
-      "key": "obj_plant_14",
-      "name": "Plants 14",
       "col": 1,
       "row": 7,
       "x": 48,
@@ -2461,19 +1833,6 @@ const CHAPTER5_MAP_DATA = {
       "info": ""
     },
     {
-      "key": "obj_plant_17",
-      "name": "Plants 17",
-      "col": 9,
-      "row": 27,
-      "x": 304,
-      "y": 880,
-      "w": 52,
-      "h": 130,
-      "color": "#888888",
-      "collidable": false,
-      "info": ""
-    },
-    {
       "key": "obj_plant_20",
       "name": "Plants 20",
       "col": 2,
@@ -2505,19 +1864,6 @@ const CHAPTER5_MAP_DATA = {
       "col": 4,
       "row": 27,
       "x": 144,
-      "y": 880,
-      "w": 13,
-      "h": 37,
-      "color": "#888888",
-      "collidable": false,
-      "info": ""
-    },
-    {
-      "key": "obj_plant_20",
-      "name": "Plants 20",
-      "col": 5,
-      "row": 27,
-      "x": 176,
       "y": 880,
       "w": 13,
       "h": 37,
@@ -2584,32 +1930,6 @@ const CHAPTER5_MAP_DATA = {
       "row": 28,
       "x": 144,
       "y": 912,
-      "w": 13,
-      "h": 37,
-      "color": "#888888",
-      "collidable": false,
-      "info": ""
-    },
-    {
-      "key": "obj_plant_20",
-      "name": "Plants 20",
-      "col": 5,
-      "row": 28,
-      "x": 176,
-      "y": 912,
-      "w": 13,
-      "h": 37,
-      "color": "#888888",
-      "collidable": false,
-      "info": ""
-    },
-    {
-      "key": "obj_plant_20",
-      "name": "Plants 20",
-      "col": 5,
-      "row": 29,
-      "x": 176,
-      "y": 944,
       "w": 13,
       "h": 37,
       "color": "#888888",
@@ -2814,19 +2134,6 @@ const CHAPTER5_MAP_DATA = {
     {
       "key": "obj_decor_13",
       "name": "Decor 13",
-      "col": 43,
-      "row": 29,
-      "x": 1392,
-      "y": 944,
-      "w": 43,
-      "h": 54,
-      "color": "#888888",
-      "collidable": false,
-      "info": ""
-    },
-    {
-      "key": "obj_decor_13",
-      "name": "Decor 13",
       "col": 4,
       "row": 13,
       "x": 144,
@@ -2864,14 +2171,326 @@ const CHAPTER5_MAP_DATA = {
       "info": ""
     },
     {
-      "key": "obj_tent_4",
-      "name": "Tent 4",
-      "col": 13,
-      "row": 9,
-      "x": 432,
-      "y": 304,
-      "w": 64,
-      "h": 71,
+      "key": "obj_house_1",
+      "name": "House 1",
+      "col": 20,
+      "row": 1,
+      "x": 656,
+      "y": 48,
+      "w": 116,
+      "h": 112,
+      "color": "#888888",
+      "collidable": true,
+      "info": ""
+    },
+    {
+      "key": "obj_house_2",
+      "name": "House 2",
+      "col": 28,
+      "row": 1,
+      "x": 912,
+      "y": 48,
+      "w": 156,
+      "h": 135,
+      "color": "#888888",
+      "collidable": true,
+      "info": ""
+    },
+    {
+      "key": "obj_plant_78",
+      "name": "Plants 78",
+      "col": 36,
+      "row": 1,
+      "x": 1168,
+      "y": 48,
+      "w": 50,
+      "h": 69,
+      "color": "#888888",
+      "collidable": false,
+      "info": ""
+    },
+    {
+      "key": "obj_plant_78",
+      "name": "Plants 78",
+      "col": 45,
+      "row": 3,
+      "x": 1456,
+      "y": 112,
+      "w": 50,
+      "h": 69,
+      "color": "#888888",
+      "collidable": false,
+      "info": ""
+    },
+    {
+      "key": "obj_plant_45",
+      "name": "Plants 45",
+      "col": 10,
+      "row": 27,
+      "x": 336,
+      "y": 880,
+      "w": 13,
+      "h": 16,
+      "color": "#888888",
+      "collidable": false,
+      "info": ""
+    },
+    {
+      "key": "obj_plant_45",
+      "name": "Plants 45",
+      "col": 10,
+      "row": 28,
+      "x": 336,
+      "y": 912,
+      "w": 13,
+      "h": 16,
+      "color": "#888888",
+      "collidable": false,
+      "info": ""
+    },
+    {
+      "key": "obj_plant_45",
+      "name": "Plants 45",
+      "col": 11,
+      "row": 27,
+      "x": 368,
+      "y": 880,
+      "w": 13,
+      "h": 16,
+      "color": "#888888",
+      "collidable": false,
+      "info": ""
+    },
+    {
+      "key": "obj_plant_45",
+      "name": "Plants 45",
+      "col": 11,
+      "row": 28,
+      "x": 368,
+      "y": 912,
+      "w": 13,
+      "h": 16,
+      "color": "#888888",
+      "collidable": false,
+      "info": ""
+    },
+    {
+      "key": "obj_plant_100",
+      "name": "Plants 100",
+      "col": 1,
+      "row": 1,
+      "x": 48,
+      "y": 48,
+      "w": 14,
+      "h": 18,
+      "color": "#888888",
+      "collidable": false,
+      "info": ""
+    },
+    {
+      "key": "obj_plant_68",
+      "name": "Plants 68",
+      "col": 3,
+      "row": 0,
+      "x": 112,
+      "y": 16,
+      "w": 15,
+      "h": 12,
+      "color": "#888888",
+      "collidable": false,
+      "info": ""
+    },
+    {
+      "key": "obj_house_1",
+      "name": "House 1",
+      "col": 16,
+      "row": 18,
+      "x": 528,
+      "y": 592,
+      "w": 116,
+      "h": 112,
+      "color": "#888888",
+      "collidable": true,
+      "info": ""
+    },
+    {
+      "key": "obj_house_2",
+      "name": "House 2",
+      "col": 12,
+      "row": 19,
+      "x": 400,
+      "y": 624,
+      "w": 156,
+      "h": 135,
+      "color": "#888888",
+      "collidable": true,
+      "info": ""
+    },
+    {
+      "key": "obj_house_1",
+      "name": "House 1",
+      "col": 20,
+      "row": 8,
+      "x": 656,
+      "y": 272,
+      "w": 116,
+      "h": 112,
+      "color": "#888888",
+      "collidable": true,
+      "info": ""
+    },
+    {
+      "key": "obj_bench_1",
+      "name": "Bench 1",
+      "col": 39,
+      "row": 26,
+      "x": 1264,
+      "y": 848,
+      "w": 50,
+      "h": 50,
+      "color": "#888888",
+      "collidable": true,
+      "info": ""
+    },
+    {
+      "key": "obj_stone_1",
+      "name": "Stone 1",
+      "col": 37,
+      "row": 30,
+      "x": 1200,
+      "y": 976,
+      "w": 10,
+      "h": 9,
+      "color": "#888888",
+      "collidable": false,
+      "info": ""
+    },
+    {
+      "key": "obj_bench_2",
+      "name": "Bench 2",
+      "col": 45,
+      "row": 26,
+      "x": 1456,
+      "y": 848,
+      "w": 50,
+      "h": 50,
+      "color": "#888888",
+      "collidable": true,
+      "info": ""
+    },
+    {
+      "key": "obj_house_1",
+      "name": "House 1",
+      "col": 30,
+      "row": 28,
+      "x": 976,
+      "y": 912,
+      "w": 116,
+      "h": 112,
+      "color": "#888888",
+      "collidable": true,
+      "info": ""
+    },
+    {
+      "key": "obj_house_1",
+      "name": "House 1",
+      "col": 17,
+      "row": 28,
+      "x": 560,
+      "y": 912,
+      "w": 116,
+      "h": 112,
+      "color": "#888888",
+      "collidable": true,
+      "info": ""
+    },
+    {
+      "key": "obj_house_3",
+      "name": "House 3",
+      "col": 9,
+      "row": 31,
+      "x": 304,
+      "y": 1008,
+      "w": 147,
+      "h": 157,
+      "color": "#888888",
+      "collidable": true,
+      "info": ""
+    },
+    {
+      "key": "obj_house_3",
+      "name": "House 3",
+      "col": 15,
+      "row": 31,
+      "x": 496,
+      "y": 1008,
+      "w": 147,
+      "h": 157,
+      "color": "#888888",
+      "collidable": true,
+      "info": ""
+    },
+    {
+      "key": "obj_house_3",
+      "name": "House 3",
+      "col": 27,
+      "row": 31,
+      "x": 880,
+      "y": 1008,
+      "w": 147,
+      "h": 157,
+      "color": "#888888",
+      "collidable": true,
+      "info": ""
+    },
+    {
+      "key": "obj_house_3",
+      "name": "House 3",
+      "col": 32,
+      "row": 31,
+      "x": 1040,
+      "y": 1008,
+      "w": 147,
+      "h": 157,
+      "color": "#888888",
+      "collidable": true,
+      "info": ""
+    },
+    {
+      "key": "obj_house_3",
+      "name": "House 3",
+      "col": 20,
+      "row": 31,
+      "x": 656,
+      "y": 1008,
+      "w": 147,
+      "h": 157,
+      "color": "#888888",
+      "collidable": true,
+      "info": ""
+    },
+    {
+      "key": "obj_bench_3",
+      "name": "Bench 3",
+      "col": 38,
+      "row": 31,
+      "x": 1232,
+      "y": 1008,
+      "w": 60.9,
+      "h": 58.099999999999994,
+      "color": "#888888",
+      "collidable": true,
+      "info": ""
+    },
+    {
+      "key": "obj_tent_3",
+      "name": "Tent 3",
+      "col": 9,
+      "row": 25,
+      "x": 304,
+      "y": 816,
+      "w": 65,
+      "h": 62,
       "color": "#888888",
       "collidable": true,
       "info": ""
@@ -2967,6 +2586,29 @@ function buildChapter5TileTypes(mapData) {
   return cfg;
 }
 
+// Trees - the editor exports these as ordinary "plant" objects with
+// collidable: false, and tile type 1 ("tree") isn't painted anywhere on this
+// map, so tree solidity is applied here in create() instead of in the JSON.
+// That way re-exporting/pasting a fresh map over CHAPTER5_MAP_DATA never
+// undoes it. Keys are the tall/canopy plants (17/18 = the tall trees along
+// the left side, 78/52/16/15 = the scattered trees). The other small plants
+// (14, 20, 41, 43, 45, 68, 100) stay walkable unless they're listed in
+// CHAPTER5_SOLID_DECOR_KEYS below. If a plant you consider a tree isn't
+// blocking yet, add its key here.
+const CHAPTER5_TREE_KEYS = new Set([
+  'obj_plant_15', 'obj_plant_16', 'obj_plant_17',
+  'obj_plant_18', 'obj_plant_52', 'obj_plant_78'
+]);
+
+// Other non-tree props that should also block the player even though the
+// editor exported them as collidable: false - the crop/flower patches
+// (plants 3 and 6) and the decor pieces 2, 3 and 13. Add more keys here the
+// same way.
+const CHAPTER5_SOLID_DECOR_KEYS = new Set([
+  'obj_plant_3', 'obj_plant_6',
+  'obj_decor_2', 'obj_decor_3', 'obj_decor_13'
+]);
+
 // --- "Keep the Story Alive" matching mini-game data ------------------------
 // 4 term cards, each matched against its description (drag the card onto the
 // matching slot). PLACEHOLDER CONTENT NOTE: only Alfombra and Pandangguhan
@@ -2997,6 +2639,110 @@ const CHAPTER5_TRADITIONS = [
     desc: 'The patron saint of Pateros, honored each year with a feast and procession.'
   }
 ];
+
+// Icon art for the four traditions: one PNG per CHAPTER5_TRADITIONS key,
+// stored as assets/icons/ch5-<key>.png (256x256, transparent background).
+// Phaser code refers to it by texture key (c5icon_<key>); the DOM matching
+// cards use the file path directly. This is real art (not placeholder), and
+// it's also reused as the on-map sprite for the explore landmarks below -
+// see the hasIconArt fallback chain in create().
+const CHAPTER5_ICON_PATH = key => `assets/icons/ch5-${key}.png`;
+const CHAPTER5_ICON_TEXTURE = key => `c5icon_${key}`;
+
+// ---------------------------------------------------------------------------
+// EXPLORE - "Traces of Today"
+// Added ahead of the matching mini-game: a short walk-around-the-plaza beat,
+// the same "find X" loop Chapters 1/3 use elsewhere, so the 4
+// CHAPTER5_TRADITIONS terms have a real thing to go find in the plaza
+// before Ate Clara/Maya explain them. Each spot is matched to a plaza object
+// by exact x/y so it can be pulled out of the plain-decor render loop in
+// create() and rendered as an interactable instead (same technique
+// CHAPTER1_QUEST_KEYS uses in Chapter1Scene.js). Visually it shows the same
+// real tradition icon art used in the popup/matching-game (CHAPTER5_ICON_*
+// above), and only falls back to the plaza's generic tent sprite if that
+// icon art is somehow missing - see the hasIconArt/hasTentImage fallback
+// chain in create() below.
+// If you move a landmark tent in the editor, update its x/y here to match -
+// any tent NOT listed here (the one at 528,816) is just solid scenery.
+// Optional per-spot `w`/`h` override the on-map sprite's display size (in
+// pixels); omit them and it just matches whatever the old tent's size was.
+// Set to 100x100 here (icons are square 256x256 art) so they're clearly
+// readable on the map instead of the old ~60-70px tent footprint - tweak
+// per spot if one needs to be bigger/smaller.
+const CHAPTER5_EXPLORE_SPOTS = [
+  { tradKey: 'alfombra', name: 'Alfombra Slippers', x: 304, y: 816, w: 100, h: 100 },      // Tent 3
+  { tradKey: 'balut', name: 'Balut Stall', x: 848, y: 208, w: 100, h: 100 },             // Tent 2
+  { tradKey: 'pandangguhan', name: 'Pandangguhan Corner', x: 304, y: 304, w: 100, h: 100 }, // Tent 1
+  { tradKey: 'santamarta', name: 'Santa Marta Shrine', x: 1360, y: 976, w: 100, h: 100 } // Tent 3
+];
+
+// Cameo NPCs - Lola Nena (Ch1), Don Emilio (Ch2), Kapitan Andres (Ch3), and
+// Mang Carding (Ch4) scattered around the Heritage Square plaza during the
+// explore beat, as a "you've met everyone" callback for the final chapter.
+// No quest logic attached - walking up and pressing E just gets a short
+// friendly line or two (see talkToNpc). Sprite sheets are already
+// loaded globally by PreloadScene.js (same ones Chapters 1-4 use), and
+// frame 0 of each is that character's down-facing idle pose, same static-
+// frame convention as Ate Clara/Maya above. Positions were chosen to sit on
+// open walkable ground, clear of every collidable object on the map.
+// `lines` / `portraits` are what they say when talked to: one portrait key
+// per line (same portraits their own chapters use), edit freely.
+const CHAPTER5_CAMEO_NPCS = [
+  {
+    sheet: 'lola-sheet', name: 'Lola Nena', x: 592, y: 176, flip: false,
+    lines: [
+      'Ay, anak, look at you - all the way from the riverbank to today\'s plaza.',
+      'Keep every page of that journal safe. Every story you gathered belongs in it.'
+    ],
+    portraits: ['lola-happy', 'lola-wink']
+  },
+  {
+    sheet: 'donemilio-sheet', name: 'Don Emilio', x: 1392, y: 816, flip: true,
+    lines: [
+      'Ah, there you are! Pateros has come a long way since it was declared a municipality in 1700.',
+      'Look around - the market, the roads, the places to gather. A town is still made of its people.'
+    ],
+    portraits: ['don-emilio-happy', 'don-emilio-explain']
+  },
+  {
+    sheet: 'kapitanandres-sheet', name: 'Kapitan Andres', x: 176, y: 912, flip: false,
+    lines: [
+      'Good to see you again, anak. The messages we once carried in secret are stories anyone can read now.',
+      'Remember what our people risked - and see what they made possible.'
+    ],
+    portraits: ['kapitan-andres-happy', 'kapitan-andres-firm']
+  },
+  {
+    sheet: 'mangcarding-sheet', name: 'Mang Carding', x: 1488, y: 208, flip: true,
+    lines: [
+      'Ay, anak! Balut is still being made around here - the trade lives on.',
+      'Every time someone asks how it\'s done, a little more of that story gets passed down.'
+    ],
+    portraits: ['mang-carding-happy', 'mang-carding-wink']
+  }
+];
+
+// What the two hosts say when talked to during the explore beat. Maya's
+// lines are a function of the scene so she can report live progress, same
+// "You've found X of N so far" idea Chapters 1-3 use.
+const CHAPTER5_HOST_TALK = {
+  ateClara: {
+    name: 'Ate Clara',
+    lines: [
+      'Take your time looking around, anak. Every corner of this plaza has a little piece of Pateros in it.',
+      "Once you've found all four traditions, Maya and I will be right here."
+    ],
+    portraits: ['ate-clara-happy', 'ate-clara-wink']
+  },
+  maya: {
+    name: 'Maya',
+    lines: scene => [
+      `You've found ${scene.exploreObjects.filter(o => o.found).length} of ${scene.exploreObjects.length} so far.`,
+      'Walk up to one of the spots and press E to take a closer look!'
+    ],
+    portraits: ['maya-happy', 'maya-wave']
+  }
+};
 
 // ==========================================================================
 // MINI-GAME 2 - Ask Well
@@ -3044,6 +2790,35 @@ const CHAPTER5_ASKWELL = [
   }
 ];
 
+// Duck constants (values mirror Chapter 4; prefixed C5_ so they cannot clash
+// with the top-level DUCK_* consts if Chapter4Scene.js is loaded first)
+const C5_DUCK_FLEE_RADIUS = 90;
+const C5_DUCK_FLEE_SPEED = 95;
+const C5_DUCK_WANDER_SPEED = 42;
+const C5_DUCK_WANDER_MIN_MS = 900;
+const C5_DUCK_WANDER_MAX_MS = 1900;
+const C5_DUCK_FLIP_THRESHOLD = 5;
+const C5_DUCK_ART_FACES_LEFT_BY_DEFAULT = false;
+const C5_DUCK_SCALE = 0.65;
+const C5_DUCK_MOVE_THRESHOLD = 4;
+
+// Where the ducks live. The plaza's only pond is the small one in the
+// top-right corner of the map (water tiles cols 39-43 x rows 1-2, i.e.
+// roughly x 1248-1408 / y 32-96, ringed by sand). Ducks paddle around it and
+// shuffle out onto the grass below, but never wander outside this rectangle
+// (world px). It stops short of the top wall and of Mang Carding's cameo at
+// x=1488. To move the flock elsewhere, change this box and C5_DUCK_START.
+const C5_DUCK_AREA = { left: 1130, right: 1420, top: 58, bottom: 300 };
+
+// Starting spots: two out on the water, three along the shore.
+const C5_DUCK_START = [
+  { x: 1290, y: 68 },
+  { x: 1355, y: 74 },
+  { x: 1235, y: 138 },
+  { x: 1320, y: 150 },
+  { x: 1395, y: 190 }
+];
+
 class Chapter5Scene extends Phaser.Scene {
   constructor() {
     super('Chapter5');
@@ -3053,10 +2828,13 @@ class Chapter5Scene extends Phaser.Scene {
     // Everything the plaza needs is derived straight from
     // CHAPTER5_MAP_DATA: load each tile type's image (if it has one) and
     // each placed object's image (if its key resolves to one under
-    // assets/src). Every object in this map is decorative (houses, plants,
-    // tents, benches, etc.) - none of them are quest/interactable keys like
-    // Chapter 1 or 3 use, matching this chapter's "no exploration task"
-    // design (see the doc note up top).
+    // assets/src). Most objects in this map are purely decorative (houses,
+    // plants, benches, etc.) - the 4 tents picked out by
+    // CHAPTER5_EXPLORE_SPOTS still load through this same loop (they keep
+    // their normal object keys) purely as a fallback now, they just get
+    // pulled out of the plain-decor render pass in create() and rendered as
+    // interactables instead. See the tradition-icon loader below for the
+    // real art that takes priority over that tent fallback.
     Object.values(CHAPTER5_MAP_DATA.tileTypes).forEach(t => {
       if (t.imageKey) {
         const path = resolveChapter5TileImagePath(t.imageKey);
@@ -3076,6 +2854,17 @@ class Chapter5Scene extends Phaser.Scene {
         console.warn('Chapter5Scene: no path resolver for object key', o.key);
       }
     });
+
+    // Duck spritesheets
+    this.load.spritesheet('duck_walk', 'assets/icons/duck-walk.png', { frameWidth: 64, frameHeight: 72 });
+    this.load.spritesheet('duck_flap', 'assets/icons/duck-flap.png', { frameWidth: 72, frameHeight: 80 });
+
+    // Tradition icons (see CHAPTER5_ICON_PATH). Real art, not placeholder -
+    // also reused as the on-map sprite for the explore landmarks (see
+    // create() below), so this one load covers both the popup and the map.
+    CHAPTER5_TRADITIONS.forEach(t => {
+      this.load.image(CHAPTER5_ICON_TEXTURE(t.key), CHAPTER5_ICON_PATH(t.key));
+    });
   }
 
   create(data) {
@@ -3086,9 +2875,23 @@ class Chapter5Scene extends Phaser.Scene {
     this.prefix = character;
     this.speed = this.registry.get('playerSpeed') || 160;
     this.locked = false; // true during dialogue / modal minigame / quiz screens - movement disabled
-    // mode: intro -> matching -> quiz -> chapterdone (then off to the
-    // plaza - see PrologueScene.playEndingSequence() for what follows)
+    // mode: intro -> explore -> matching -> between -> askwell -> quiz ->
+    // chapterdone (then off to the plaza - see
+    // PrologueScene.playEndingSequence() for what follows)
     this.mode = 'intro';
+
+    // Duck animations - same keys/frames as Chapter 4. Phaser's animation
+    // manager is global, so these may already exist if Chapter 4 was played
+    // first in this session; the exists() guards make jumping straight into
+    // Chapter 5 from the Chapters menu work too.
+    if (this.textures.exists('duck_walk') && !this.anims.exists('duck-walk')) {
+      this.anims.create({
+        key: 'duck-walk',
+        frames: this.anims.generateFrameNumbers('duck_walk', { start: 0, end: 6 }),
+        frameRate: 8,
+        repeat: -1
+      });
+    }
 
     // --- Heritage Square map (loaded from the editor's exported JSON, see
     //     CHAPTER5_MAP_DATA above) ---
@@ -3127,6 +2930,8 @@ class Chapter5Scene extends Phaser.Scene {
     // handleAskKeyPress) - guarded internally rather than only being
     // listened for while that mode is active, same approach as ESC above.
     this.input.keyboard.on('keydown-E', () => this.handleAskKeyPress());
+    // Same pattern for the explore beat - see handleExploreKeyPress.
+    this.input.keyboard.on('keydown-E', () => this.handleExploreKeyPress());
 
 // --- Ate Clara & Maya --- (real sprite sheets, same 44x78 grid
      // convention as hiraya-sheet/lola-sheet/donemilio-sheet/kapitanandres-sheet/
@@ -3155,43 +2960,153 @@ class Chapter5Scene extends Phaser.Scene {
      this.ateClara.setDepth(0);
      this.maya.setDepth(0);
 
+     // "Report back" step - once all 4 landmarks are found the player has to
+     // walk back and press E on Ate Clara or Maya before the next dialogue
+     // starts (same idea as Chapter1Scene's returnFlag / reportDone with
+     // Lola). The ❗ flags sit above each host and only show while a report
+     // is pending - see onAllTracesFound() / finishExploration().
+     this.reportDone = false;
+     this.returnFlags = [this.ateClara, this.maya].map(n =>
+       this.add.text(n.x, n.y - 60, '❗', { fontSize: 26 })
+         .setOrigin(0.5).setDepth(100000).setVisible(false));
+
+    // --- cameo NPCs (see CHAPTER5_CAMEO_NPCS) - Lola/Don Emilio/Kapitan
+    // Andres/Mang Carding standing around the plaza, static frame 0 only,
+    // same collider treatment as Ate Clara/Maya above so the player can't
+    // walk through them, but no dialogue wired up - purely a background
+    // cameo for the final chapter.
+    this.cameoObstacles = CHAPTER5_CAMEO_NPCS.map(n => {
+      const spr = this.add.sprite(n.x, n.y, n.sheet, 0).setFlipX(!!n.flip).setDepth(n.y);
+      this.physics.add.existing(spr, true);
+      spr.body.setSize(C5_FRAME_W * 0.6, C5_FRAME_H * 0.85, false);
+      spr.body.setOffset(C5_FRAME_W * 0.2, C5_FRAME_H * 0.08);
+      return spr;
+    });
+    this.physics.add.collider(this.player, this.cameoObstacles);
+
+    // --- everyone the player can talk to during the explore beat: the two
+    // hosts plus the four cameos (see CHAPTER5_HOST_TALK / CHAPTER5_CAMEO_NPCS
+    // for what each says).
+    this.npcTalks = [
+      { sprite: this.ateClara, ...CHAPTER5_HOST_TALK.ateClara },
+      { sprite: this.maya, ...CHAPTER5_HOST_TALK.maya },
+      ...CHAPTER5_CAMEO_NPCS.map((n, i) => ({
+        sprite: this.cameoObstacles[i], name: n.name, lines: n.lines, portraits: n.portraits
+      }))
+    ];
+
+    // --- 4 "Traces of Today" landmarks to find (see CHAPTER5_EXPLORE_SPOTS)
+    // - pulled out of the plain decor loop below by exact x/y match so they
+    // render as interactables (prompt + info popup on E) instead of static
+    // scenery, same technique Chapter1Scene.js uses for CHAPTER1_QUEST_KEYS.
+    const exploreCoordKey = (x, y) => `${x},${y}`;
+    const exploreSpotCoords = new Set(CHAPTER5_EXPLORE_SPOTS.map(s => exploreCoordKey(s.x, s.y)));
+    this.exploreObjects = CHAPTER5_EXPLORE_SPOTS.map(spot => {
+      const srcObj = CHAPTER5_MAP_DATA.objects.find(o => o.x === spot.x && o.y === spot.y);
+      const trad = CHAPTER5_TRADITIONS.find(t => t.key === spot.tradKey);
+      // Display size: an explicit spot.w/h wins; otherwise match whatever
+      // size the old tent object was, so existing spots look the same as
+      // before until you tweak them.
+      const w = spot.w || (srcObj ? srcObj.w : 64), h = spot.h || (srcObj ? srcObj.h : 64);
+      // Use the real tradition icon art (same PNG the popup/matching-game
+      // shows) as the on-map sprite too, sized to fit the spot's original
+      // footprint; only fall back to the plaza's generic tent if that icon
+      // somehow isn't loaded, and to a plain placeholder box after that.
+      const iconTexKey = CHAPTER5_ICON_TEXTURE(spot.tradKey);
+      const hasIconArt = this.textures.exists(iconTexKey);
+      const hasTentImage = srcObj && this.textures.exists(srcObj.key);
+      const vis = hasIconArt
+        ? this.add.image(spot.x, spot.y, iconTexKey).setDisplaySize(w, h)
+        : hasTentImage
+          ? this.add.image(spot.x, spot.y, srcObj.key).setDisplaySize(w, h)
+          : this.add.rectangle(spot.x, spot.y, w, h, 0x8a6a3a).setStrokeStyle(2, 0xf5e2c8);
+      vis.setDepth(spot.y);
+      this.physics.add.existing(vis, true);
+      // The static body defaults to the source texture's native size (e.g.
+      // 256x256 for the icon art), not the setDisplaySize() we just applied
+      // - so without this it collides as a huge invisible box way bigger
+      // than what's actually drawn, and the player can never get close
+      // enough to trigger "Press E". This resyncs the body to match what's
+      // really on screen.
+      vis.body.updateFromGameObject();
+      return {
+        key: trad.key, name: trad.name, info: trad.desc,
+        iconKey: hasIconArt ? iconTexKey : null,
+        x: spot.x, y: spot.y, found: false, rect: vis,
+        promptY: spot.y - h / 2 - 12
+      };
+    });
+    this.physics.add.collider(this.player, this.exploreObjects.map(o => o.rect));
+
     // --- decorative scenery (houses, plants, tents, benches, boxes, etc.
     // placed in the map editor) --- purely visual, except collidable ones
     // also get a static physics body so the player can't just walk through
-    // a house or a tent. No quest/find logic here - see the doc note up top
-    // for why this chapter skips that loop entirely.
+    // a house or a tent. The 4 tents used as explore landmarks above are
+    // skipped here so they aren't rendered twice.
     this.decorObstacles = [];
-    CHAPTER5_MAP_DATA.objects.forEach(o => {
-      const hasImage = this.textures.exists(o.key);
-      let vis;
-      if (hasImage) {
-        vis = this.add.image(o.x, o.y, o.key).setDisplaySize(o.w, o.h);
-      } else {
-        vis = this.add.rectangle(o.x, o.y, o.w, o.h, chapter5HexToInt(o.color, 0x888888));
-      }
-      vis.setDepth(o.y);
-      if (o.collidable) {
-        this.physics.add.existing(vis, true);
-        this.decorObstacles.push(vis);
-      }
-    });
+    CHAPTER5_MAP_DATA.objects
+      .filter(o => !exploreSpotCoords.has(exploreCoordKey(o.x, o.y)))
+      .forEach(o => {
+        const hasImage = this.textures.exists(o.key);
+        let vis;
+        if (hasImage) {
+          vis = this.add.image(o.x, o.y, o.key).setDisplaySize(o.w, o.h);
+        } else {
+          vis = this.add.rectangle(o.x, o.y, o.w, o.h, chapter5HexToInt(o.color, 0x888888));
+        }
+        vis.setDepth(o.y);
+        // Trees (CHAPTER5_TREE_KEYS) and the extra props in
+        // CHAPTER5_SOLID_DECOR_KEYS block the player too, even though the
+        // exported JSON has them as collidable: false.
+        if (o.collidable || CHAPTER5_TREE_KEYS.has(o.key) || CHAPTER5_SOLID_DECOR_KEYS.has(o.key)) {
+          this.physics.add.existing(vis, true);
+          // Same fix as the explore landmarks above: if this object's
+          // exported w/h (from the map editor) differs at all from its
+          // source texture's native size, the static body defaults to the
+          // texture's native size instead of what's actually drawn - giving
+          // an invisible collider bigger (or offset) than the visible
+          // sprite, which is exactly what blocks the player from getting
+          // close enough to interact with something like a house/kiosk.
+          if (hasImage) vis.body.updateFromGameObject();
+          this.decorObstacles.push(vis);
+        }
+      });
     this.physics.add.collider(this.player, this.decorObstacles);
+
+    // --- ambient pond ducks (see C5_DUCK_AREA) - purely scenery: they
+    // wander, spook away from the player, and never block or affect the
+    // story flow.
+    this.createAmbientDucks();
+
+    // Generic "near a landmark" hint for the explore beat - repositioned
+    // each frame above whichever unfound landmark the player is closest to.
+    // Same look/approach as Chapter1Scene's interactPrompt.
+    this.interactPrompt = this.add.text(0, 0, 'Press E to look', {
+      fontFamily: '"Tildunk", sans-serif', fontSize: 13, color: '#fff8e7', backgroundColor: '#000000aa',
+      padding: { x: 6, y: 3 }
+    }).setOrigin(0.5).setVisible(false).setDepth(100000);
 
     // --- HUD --- (scrollFactor 0 so it stays pinned to the screen instead
     // of scrolling away with the map now that the camera follows the player)
+    // Depth 10200/10201: has to clear the player (10000, see setDepth above)
+    // and every y-sorted world object - including the explore landmarks,
+    // which can sit as deep as y=976 (Santa Marta Shrine) - or the HUD gets
+    // drawn behind whatever's in front on screen at that moment. Still below
+    // the 10400+ modals/popups so those keep covering the HUD as expected.
+    const HUD_DEPTH = 10200, HUD_LABEL_DEPTH = 10201;
     const displayName = character.charAt(0).toUpperCase() + character.slice(1);
     this.add.text(14, 12, displayName, {
       fontFamily: '"Tildunk", Georgia, serif', fontSize: 18, color: '#fff8e7'
-    }).setShadow(1, 1, '#000000aa', 2, true, true).setScrollFactor(0).setDepth(900);
+    }).setShadow(1, 1, '#000000aa', 2, true, true).setScrollFactor(0).setDepth(HUD_DEPTH);
 
     this.add.text(width / 2, 16, 'Chapter 5: A Living Heritage', {
       fontFamily: '"Tildunk", Georgia, serif', fontSize: 16, color: '#f5e2c8'
-    }).setOrigin(0.5, 0).setShadow(1, 1, '#000000aa', 2, true, true).setScrollFactor(0).setDepth(900);
+    }).setOrigin(0.5, 0).setShadow(1, 1, '#000000aa', 2, true, true).setScrollFactor(0).setDepth(HUD_DEPTH);
 
     // one shared progress readout, re-labeled per phase (see updateProgress)
     this.progressText = this.add.text(width / 2, 38, '', {
       fontFamily: '"Tildunk", sans-serif', fontSize: 13, color: '#f5e2c8'
-    }).setOrigin(0.5, 0).setShadow(1, 1, '#000000aa', 2, true, true).setScrollFactor(0).setDepth(900);
+    }).setOrigin(0.5, 0).setShadow(1, 1, '#000000aa', 2, true, true).setScrollFactor(0).setDepth(HUD_DEPTH);
 
     // Wooden-Gold UI icon pack - same plank button used for Start
     // Adventure/Chapters on the Main Menu (see createWoodButton in ui.js),
@@ -3202,18 +3117,36 @@ class Chapter5Scene extends Phaser.Scene {
         this.showJournalModal();
       }
     }, { width: 130, height: 40, fontSize: 14 });
-    journalBtn.image.setScrollFactor(0).setDepth(900);
-    journalBtn.txt.setScrollFactor(0).setDepth(901);
+    journalBtn.image.setScrollFactor(0).setDepth(HUD_DEPTH);
+    journalBtn.txt.setScrollFactor(0).setDepth(HUD_LABEL_DEPTH);
 
     const menuBtn = createWoodButton(this, width - 66, height - 30, 'Menu', () => {
       if (!this.locked) { this.locked = true; showPauseMenu(this); }
     }, { width: 130, height: 40, fontSize: 14 });
-    menuBtn.image.setScrollFactor(0).setDepth(900);
-    menuBtn.txt.setScrollFactor(0).setDepth(901);
+    menuBtn.image.setScrollFactor(0).setDepth(HUD_DEPTH);
+    menuBtn.txt.setScrollFactor(0).setDepth(HUD_LABEL_DEPTH);
 
-    this.add.text(width / 2, height - 12, 'Esc for menu', {
+    // Task button (top-right, same spot/size as Chapters 1-3) - opens the
+    // objectives panel listing the 4 traces to find. Stays hidden until
+    // Ate Clara and Maya have actually given the task (see
+    // startExploration), and only responds during the explore beat, the one
+    // phase that has a to-do list; the later phases are modal/timed and
+    // announce themselves.
+    const taskBtn = createWoodButton(this, width - 84, 27, 'Task', () => {
+      if (this.mode === 'explore' && !this.locked) {
+        this.locked = true;
+        this.showObjectivesModal();
+      }
+    }, { width: 150, height: 40, fontSize: 15 });
+    this.taskBtnRect = taskBtn.image.setScrollFactor(0).setDepth(HUD_DEPTH);
+    this.taskBtnTxt = taskBtn.txt.setScrollFactor(0).setDepth(HUD_LABEL_DEPTH);
+    this.taskBtnRect.setVisible(false);
+    this.taskBtnTxt.setVisible(false);
+    this.updateProgress();
+
+    this.add.text(width / 2, height - 12, 'WASD to move · E to interact · Esc for menu', {
       fontFamily: '"Tildunk", sans-serif', fontSize: 12, color: '#9aa0aa'
-    }).setOrigin(0.5, 1).setScrollFactor(0).setDepth(900);
+    }).setOrigin(0.5, 1).setScrollFactor(0).setDepth(HUD_DEPTH);
 
     // The matching mini-game's card/slot divs and their drag listeners are
     // created in startMatchingGame() / buildMatchOverlayDom(). Registered
@@ -3233,8 +3166,9 @@ class Chapter5Scene extends Phaser.Scene {
         showDialogue(this, 'Maya', [
           "Hi! I'm Maya. Ate Clara's been teaching me all this since I was little.",
           "I used to think it was kind of boring, if I'm honest. Now I get why it matters.",
-          "Here - help us with a few of these. Match each one to what it's about, and I promise it'll stick."
-        ], () => this.startMatchingGame(), ['maya-wave', 'maya-happy', 'maya-wink']);
+          "Before anything else - go take a look around the plaza. Alfombra, Pandangguhan, balut, Santa Marta - all four are still out there today, if you know where to look.",
+          "Come find them, then we'll match everything up."
+        ], () => this.startExploration(), ['maya-wave', 'maya-happy', 'maya-wink', 'maya-happy']);
       }, ['ate-clara-wave', 'ate-clara-happy', 'ate-clara-wink']);
     });
   }
@@ -3252,16 +3186,133 @@ class Chapter5Scene extends Phaser.Scene {
     }
   }
 
+  // Task list for the HUD counter / objectives modal: the 4 plaza landmarks
+  // from the explore beat (Maya names all four in her intro, so unlike
+  // Chapter 3's hidden objects they're listed by name from the start).
+  // The 4 landmarks, plus a 5th "Report to Ate Clara & Maya" task that only
+  // appears once all 4 are found (goes 4/4 -> 4/5, then 5/5 once you've
+  // talked to them) - same shape as Chapter 1's report-to-Lola task.
+  getTaskList() {
+    const list = this.exploreObjects.map(o => ({ name: o.name, found: o.found, info: o.info, iconKey: o.iconKey, type: 'item' }));
+    if (this.exploreObjects.every(o => o.found)) {
+      list.push({
+        name: 'Report to Ate & Maya',
+        found: this.reportDone,
+        info: 'Walk back to Ate Clara and Maya and press E to tell them what you found.',
+        type: 'task'
+      });
+    }
+    return list;
+  }
+
   // Shared top-center readout, re-labeled for whichever phase is active.
   updateProgress() {
+    const tasks = this.getTaskList();
+    const doneCount = tasks.filter(t => t.found).length;
+    if (this.taskBtnTxt) this.taskBtnTxt.setText(`Task (${doneCount}/${tasks.length})`);
+
     if (!this.progressText) return;
-    if (this.mode === 'matching') {
+    if (this.mode === 'explore') {
+      // "Found x/y" readout under the title is hidden on purpose - the Task
+      // button's own counter already shows the same progress.
+      this.progressText.setText('');
+    } else if (this.mode === 'matching') {
       this.progressText.setText(`Matched: ${this.matchedCount || 0}/${CHAPTER5_TRADITIONS.length}`);
     } else if (this.mode === 'askwell') {
       this.progressText.setText(`Asked: ${this.askIndex}/${CHAPTER5_ASKWELL.length}`);
     } else {
       this.progressText.setText('');
     }
+  }
+
+  // --- Objectives modal: which of the 4 traces are found -----------------
+  // Same panel as Chapters 1-3's Task button. Hovering a found row pops up
+  // what was learned from it.
+  showObjectivesModal() {
+    const { width, height } = this.scale;
+    const tasks = this.getTaskList();
+    const container = this.add.container(0, 0).setDepth(10500).setScrollFactor(0);
+    const overlay = this.add.rectangle(width / 2, height / 2, width, height, 0x000000, 0.45).setInteractive().setScrollFactor(0);
+
+    const rowH = 34;
+    const headerH = 96;
+    const tooltipH = 74;
+    const footerH = 60;
+    const panelH = headerH + tasks.length * rowH + tooltipH + footerH;
+    const panel = this.add.rectangle(width / 2, height / 2, 380, panelH, 0xfff8e7, 1).setStrokeStyle(4, 0x9c3b2e);
+    const top = height / 2 - panelH / 2;
+
+    const title = this.add.text(width / 2, top + 26, 'Objectives', {
+      fontFamily: '"Tildunk", Georgia, serif', fontSize: 20, color: '#9c3b2e', fontStyle: 'bold'
+    }).setOrigin(0.5);
+    const allTracesFound = this.exploreObjects.every(o => o.found);
+    const subtitle = this.add.text(width / 2, top + 50,
+      allTracesFound ? 'All found \u2014 now report back to Ate Clara and Maya:' : 'Find the four traditions still alive in the plaza:', {
+      fontFamily: '"Tildunk", sans-serif', fontSize: 13, color: '#6b4a2f'
+    }).setOrigin(0.5);
+    const hint = this.add.text(width / 2, top + 70, 'Hover a found item to see what you learned', {
+      fontFamily: '"Tildunk", sans-serif', fontSize: 11, color: '#9aa0aa', fontStyle: 'italic'
+    }).setOrigin(0.5);
+
+    container.add([overlay, panel, title, subtitle, hint]);
+
+    // Shared tooltip element - one instance, repositioned/retexted per hover.
+    const tooltipTxt = this.add.text(width / 2, top + headerH + tasks.length * rowH + 14, '', {
+      fontFamily: '"Tildunk", sans-serif', fontSize: 12, color: '#3b2410', align: 'center',
+      wordWrap: { width: 330 }
+    }).setOrigin(0.5, 0).setVisible(false);
+    container.add(tooltipTxt);
+
+    tasks.forEach((t, i) => {
+      const y = top + headerH + i * rowH;
+      const found = t.found;
+      const mark = this.add.text(width / 2 - 172, y, found ? '\u2713' : '\u2014', {
+        fontFamily: '"Tildunk", sans-serif', fontSize: 16, fontStyle: 'bold',
+        color: found ? '#3c7a3e' : '#9aa0aa'
+      }).setOrigin(0, 0.5);
+      const label = this.add.text(width / 2 - 118, y, (t.type === 'item' && !found) ? '???' : t.name, {
+        fontFamily: '"Tildunk", sans-serif', fontSize: 15,
+        color: found ? '#3c7a3e' : '#3b2410'
+      }).setOrigin(0, 0.5);
+      const status = this.add.text(width / 2 + 150, y, found
+        ? (t.type === 'task' ? 'Done' : 'Found')
+        : (t.type === 'task' ? 'Go talk to them' : 'Not found'), {
+        fontFamily: '"Tildunk", sans-serif', fontSize: 11,
+        color: found ? '#3c7a3e' : '#9aa0aa'
+      }).setOrigin(1, 0.5);
+      container.add([mark, label, status]);
+
+      // Tradition icon: full color once found, a dark silhouette until then.
+      if (t.iconKey && this.textures.exists(t.iconKey)) {
+        const ic = this.add.image(width / 2 - 140, y, t.iconKey);
+        ic.setScale(26 / Math.max(ic.width, ic.height));
+        if (!found) ic.setTint(0x2a1a0c).setAlpha(0.4);
+        container.add(ic);
+      }
+
+      if (found) {
+        const hitZone = this.add.rectangle(width / 2, y, 356, rowH, 0xffffff, 0.001)
+          .setInteractive({ useHandCursor: true })
+          .setScrollFactor(0);
+        const rowHighlight = this.add.rectangle(width / 2, y, 356, rowH, 0x3c7a3e, 0.12).setVisible(false);
+        container.add([rowHighlight, hitZone]);
+
+        hitZone.on('pointerover', () => {
+          rowHighlight.setVisible(true);
+          tooltipTxt.setText(t.info).setVisible(true);
+        });
+        hitZone.on('pointerout', () => {
+          rowHighlight.setVisible(false);
+          tooltipTxt.setVisible(false);
+        });
+      }
+    });
+
+    const { rect, txt } = createButton(this, width / 2, top + panelH - 30, 'Close', () => {
+      container.destroy();
+      this.locked = false;
+    }, { width: 140, height: 36, fontSize: 15 });
+    container.add([rect, txt]);
   }
 
   // --- Journal modal: which pages are unlocked vs still locked ------------
@@ -3310,6 +3361,176 @@ showJournalModal() {
   }
 
   // ==========================================================================
+  // EXPLORE - "Traces of Today" (find the 4 landmarks, see
+  // CHAPTER5_EXPLORE_SPOTS above). Same walk-up-and-press-E loop
+  // Chapter1Scene.js uses for its 5 river-life objects, just scoped down to
+  // 4 stops and run before the matching game instead of before a quiz.
+  // ==========================================================================
+  startExploration() {
+    this.mode = 'explore';
+    this.locked = false;
+    // The task has now actually been given - reveal the Task button.
+    this.taskBtnRect.setVisible(true);
+    this.taskBtnTxt.setVisible(true);
+    this.updateProgress();
+  }
+
+  nearestExploreInteractable() {
+    const p = this.player;
+    let best = null, bestDist = OBJECT_INTERACT_REACH;
+    // Measured to the landmark's edge (not its centre) so a 100x100 sprite
+    // can be interacted with equally from the top, bottom, left and right.
+    this.exploreObjects.forEach(o => {
+      if (o.found) return;
+      const d = interactGapToObject(p, o.rect);
+      if (d < bestDist) { best = o; bestDist = d; }
+    });
+    return best;
+  }
+
+  handleExploreKeyPress() {
+    if (this.mode !== 'explore' || this.locked) return;
+    // Landmarks (the actual objective) win over chatting if both are in reach.
+    const nearest = this.nearestExploreInteractable();
+    if (nearest) { this.interactWithExploreObject(nearest); return; }
+    const npc = this.nearestTalkNpc();
+    if (!npc) return;
+    // All 4 found: talking to either host is the "report back" step.
+    if (this.isReportTarget(npc)) { this.finishExploration(); return; }
+    this.talkToNpc(npc);
+  }
+
+  // True while the 4 landmarks are all found but the player hasn't walked
+  // back to report yet.
+  isReportPending() {
+    return this.mode === 'explore' && !this.reportDone && this.exploreObjects.every(o => o.found);
+  }
+
+  // Ate Clara and Maya are who you report to (the four cameo NPCs aren't).
+  isReportTarget(npc) {
+    return this.isReportPending() && (npc.sprite === this.ateClara || npc.sprite === this.maya);
+  }
+
+  // Closest NPC within INTERACT_RADIUS (the shared reach from Chapter1Scene.js
+  // that the landmarks and Chapters 1-3 use too). Static bodies keep the
+  // player ~25-68px from an NPC's centre depending on the side they approach
+  // from, so 80 reaches from every direction.
+  nearestTalkNpc() {
+    if (!this.npcTalks) return null;
+    const p = this.player;
+    let best = null, bestDist = INTERACT_RADIUS;
+    this.npcTalks.forEach(n => {
+      const d = Phaser.Math.Distance.Between(p.x, p.y, n.sprite.x, n.sprite.y);
+      if (d < bestDist) { best = n; bestDist = d; }
+    });
+    return best;
+  }
+
+  // Simple talk: freeze the player, show the NPC's lines, unfreeze. No
+  // story state changes - the chapter flow is untouched.
+  talkToNpc(npc) {
+    this.locked = true;
+    this.interactPrompt.setVisible(false);
+    const lines = typeof npc.lines === 'function' ? npc.lines(this) : npc.lines;
+    showDialogue(this, npc.name, lines, () => { this.locked = false; }, npc.portraits);
+  }
+
+  // "Found it" popup for a landmark. Same cream/maroon panel as the journal
+  // reward modal, with the tradition's icon on top and a Continue button
+  // (E / Space / Enter close it too). Falls back to the shared
+  // showInfoPopup() when the icon PNG isn't there, so a missing file can
+  // never block the explore beat. `onClose` runs exactly once, on dismiss.
+  showTraceFoundPopup(o, onClose) {
+    SoundManager.play(this, 'found');
+
+    if (!o.iconKey || !this.textures.exists(o.iconKey)) {
+      showInfoPopup(this, o.name.toUpperCase(), o.info, onClose);
+      return;
+    }
+    const { width, height } = this.scale;
+    const iconSize = Phaser.Math.Clamp(height - 300, 96, 160);
+    const panelW = 500;
+    const panelH = iconSize + 250;
+    const top = height / 2 - panelH / 2;
+
+    const container = this.add.container(0, 0).setDepth(10500).setScrollFactor(0);
+    const overlay = this.add.rectangle(width / 2, height / 2, width, height, 0x000000, 0.55).setInteractive().setScrollFactor(0);
+    const panel = this.add.rectangle(width / 2, height / 2, panelW, panelH, 0xfff8e7, 1).setStrokeStyle(4, 0x9c3b2e);
+
+    const iconY = top + 32 + iconSize / 2;
+    const plate = this.add.rectangle(width / 2, iconY, iconSize + 20, iconSize + 20, 0xf5e2c8, 1).setStrokeStyle(3, 0xd8b04a);
+    const icon = this.add.image(width / 2, iconY, o.iconKey);
+    const iconScale = iconSize / Math.max(icon.width, icon.height);
+    icon.setScale(iconScale * 0.6);
+    this.tweens.add({ targets: icon, scale: iconScale, duration: 260, ease: 'Back.Out' });
+
+    const title = this.add.text(width / 2, top + iconSize + 64, o.name.toUpperCase(), {
+      fontFamily: '"Tildunk", Georgia, serif', fontSize: 22, color: '#9c3b2e', fontStyle: 'bold'
+    }).setOrigin(0.5);
+    const info = this.add.text(width / 2, top + iconSize + 92, o.info, {
+      fontFamily: '"Tildunk", sans-serif', fontSize: 15, color: '#3b2410', align: 'center',
+      wordWrap: { width: panelW - 60 }
+    }).setOrigin(0.5, 0);
+
+    container.add([overlay, panel, plate, icon, title, info]);
+
+    let closed = false;
+    const closeKeys = ['keydown-E', 'keydown-SPACE', 'keydown-ENTER'];
+    const close = () => {
+      if (closed) return;
+      closed = true;
+      closeKeys.forEach(k => this.input.keyboard.off(k, close));
+      container.destroy();
+      if (onClose) onClose();
+    };
+
+    const { rect, txt } = createButton(this, width / 2, top + panelH - 36, 'Continue', close,
+      { width: 190, height: 44, fontSize: 17, color: 0x3c7a3e, hoverColor: 0x4c9a4e });
+    container.add([rect, txt]);
+
+    // Keyboard dismiss is armed after a beat so the very E press that opened
+    // the popup can't close it again in the same breath.
+    this.time.delayedCall(250, () => {
+      if (!closed) closeKeys.forEach(k => this.input.keyboard.on(k, close));
+    });
+  }
+
+  interactWithExploreObject(o) {
+    this.locked = true;
+    this.showTraceFoundPopup(o, () => {
+      o.found = true;
+      o.rect.setAlpha(0.55);
+      this.updateProgress();
+      this.locked = false;
+      if (this.exploreObjects.every(x => x.found)) this.onAllTracesFound();
+    });
+  }
+
+  // All 4 landmarks found: don't jump straight into dialogue. Show the ❗
+  // over Ate Clara and Maya and a toast, then wait for the player to walk
+  // back and press E on one of them (see handleExploreKeyPress), same as
+  // Chapter 1's "Talk to Lola Nena" step. Movement stays free meanwhile.
+  onAllTracesFound() {
+    this.returnFlags.forEach(f => f.setVisible(true));
+    this.updateProgress();
+    if (typeof showToast === 'function') showToast(this, 'Report to Ate Clara and Maya');
+  }
+
+  // The report itself - runs when the player talks to Ate Clara or Maya
+  // after finding everything, then carries on into the matching game.
+  finishExploration() {
+    this.mode = 'between';
+    this.locked = true;
+    this.reportDone = true;
+    this.returnFlags.forEach(f => f.setVisible(false));
+    this.interactPrompt.setVisible(false);
+    this.updateProgress();
+    showDialogue(this, 'Maya', [
+      "Found all four! See, it's not just old stories - it's still happening around us."
+    ], () => this.startMatchingGame(), ['maya-happy']);
+  }
+
+  // ==========================================================================
   // MINI-GAME - "Keep the Story Alive" (drag-and-drop matching)
   // 4 term cards on the left, 4 (shuffled) description slots on the right.
   // Drag a card onto its matching slot; a correct drop locks the card in
@@ -3337,7 +3558,7 @@ showJournalModal() {
   // Builds the DOM overlay: a fixed-position div sized/positioned to match
   // the game canvas's actual on-screen bounding rect, containing a centered
   // panel with draggable card divs and static slot divs. The panel uses a
-  // fixed 820x460 layout (same numbers as the old Phaser version) and is
+  // fixed 820x570 layout (same numbers as the old Phaser version) and is
   // scaled down with a CSS transform if the canvas is narrower than that.
   buildMatchOverlayDom() {
     const CARD_W = 220, CARD_H = 60;
@@ -3360,7 +3581,7 @@ showJournalModal() {
     Object.assign(panel.style, {
       position: 'relative',
       width: '820px',
-      height: '460px',
+      height: '570px',
       background: '#fff8e7',
       border: '4px solid #9c3b2e',
       borderRadius: '4px',
@@ -3384,6 +3605,12 @@ showJournalModal() {
       textAlign: 'center', color: '#6b4a2f', fontFamily: '"Tildunk", sans-serif', fontSize: '13px'
     });
 
+    // NOTE: this modal deliberately has no close/exit button. It's a locked
+    // modal - the Phaser "Menu" button and the ESC pause menu are already
+    // unreachable/blocked while it's open (this.locked is true for the whole
+    // activity, and this DOM overlay sits above the canvas) - so the only
+    // way forward is to match all four cards (see finishMatchingGame).
+
     panel.appendChild(title);
     panel.appendChild(subtitle);
     overlay.appendChild(panel);
@@ -3396,8 +3623,8 @@ showJournalModal() {
     const panelW = 820;
     const leftX = panelW / 2 - 250;   // card column center-x
     const rightX = panelW / 2 + 210;  // slot column center-x
-    const startY = 108;
-    const gapY = 82;
+    const startY = 150;
+    const gapY = 112;
 
     // terms (draggable cards) and slots (drop targets) are shuffled
     // independently so the layout never gives the answer away for free.
@@ -3432,7 +3659,21 @@ showJournalModal() {
     terms.forEach((t, i) => {
       const cy = startY + i * gapY;
       const card = document.createElement('div');
-      card.textContent = t.name;
+      // Icon + name (the slots on the right stay text-only so the icon
+      // never gives the answer away). If the PNG is missing the <img> just
+      // removes itself and the card looks exactly like it used to.
+      const iconImg = document.createElement('img');
+      iconImg.src = CHAPTER5_ICON_PATH(t.key);
+      iconImg.alt = '';
+      iconImg.draggable = false;
+      Object.assign(iconImg.style, {
+        width: '44px', height: '44px', objectFit: 'contain', flexShrink: '0',
+        marginRight: '8px', pointerEvents: 'none', userSelect: 'none'
+      });
+      iconImg.onerror = () => iconImg.remove();
+      const nameSpan = document.createElement('span');
+      nameSpan.textContent = t.name;
+      card.append(iconImg, nameSpan);
       card.dataset.key = t.key;
       Object.assign(card.style, {
         position: 'absolute',
@@ -3448,7 +3689,7 @@ showJournalModal() {
         color: '#fff8e7', fontWeight: 'bold',
         fontFamily: '"Tildunk", Georgia, serif', fontSize: '15px',
         cursor: 'grab', userSelect: 'none', touchAction: 'none',
-        transition: 'left 0.22s ease-out, top 0.22s ease-out'
+        transition: 'left 0.22s ease-out, top 0.22s ease-out, height 0.22s ease-out'
       });
       card.homeLeft = leftX - CARD_W / 2;
       card.homeTop = cy - CARD_H / 2;
@@ -3477,7 +3718,7 @@ showJournalModal() {
       width: `${rect.width}px`,
       height: `${rect.height}px`
     });
-    const scale = Math.min(1, (rect.width - 40) / 820, (rect.height - 40) / 460);
+    const scale = Math.min(1, (rect.width - 40) / 820, (rect.height - 40) / 570);
     this.matchScale = scale > 0 ? scale : 1;
     if (this.matchPanelEl) this.matchPanelEl.style.transform = `scale(${this.matchScale})`;
   }
@@ -3556,9 +3797,23 @@ showJournalModal() {
       card.matched = true;
       target.filled = true;
       card.style.left = `${target.cx - cardW / 2}px`;
-      card.style.top = `${target.cy - 50 - cardH / 2}px`;
+      // Rows are only gapY (82px) apart and a slot is already 72px tall, so
+      // there's only ~10px of genuinely free space between one slot and the
+      // next. Docking the still-full-size card there (the old -50 offset)
+      // meant it dipped ~16px into its own slot's text AND ~34px into the
+      // slot above it - "blocking the [description] boxes", per the report.
+      // Once matched the card no longer needs to be a full drag target, so
+      // shrink it to a compact tag first, then park it just above its own
+      // slot with a small deliberate overlap (like the dialogue box's name
+      // tag) - and nowhere near the slot above.
+      const matchedCardH = 32;
+      card.style.height = `${matchedCardH}px`;
+      card.style.top = `${target.cy - 62}px`;
       card.style.background = '#3c7a3e';
       card.style.pointerEvents = 'none';
+      // the compact matched tag is only 32px tall - shrink the icon to fit
+      const cardIcon = card.querySelector('img');
+      if (cardIcon) Object.assign(cardIcon.style, { width: '16px', height: '16px', marginRight: '6px' });
       card._cleanupDrag && card._cleanupDrag();
       target.el.style.background = 'rgba(60,122,62,0.22)';
       target.el.style.border = '3px solid #3c7a3e';
@@ -3579,10 +3834,10 @@ showJournalModal() {
   }
 
   // Tears down the DOM overlay and its listeners. Safe to call more than
-  // once (normal completion, or the player bailing out mid-game via ESC /
-  // Menu) since every step checks the element still exists first. Also
-  // hooked to the scene's shutdown/destroy events in create() so a
-  // mid-game exit never leaves an orphaned overlay div behind.
+  // once (normal completion via finishMatchingGame, plus the scene's
+  // shutdown/destroy hooks in create()) since every step checks the element
+  // still exists first, so leaving the scene never strands an orphaned
+  // overlay div behind.
   cleanupMatchOverlay() {
     if (this._matchResizeHandler) {
       window.removeEventListener('resize', this._matchResizeHandler);
@@ -3978,13 +4233,126 @@ const { width, height } = this.scale;
     container.add([rect, txt]);
   }
 
+  // --------------------------------------------------------------------
+  // Ambient pond ducks. Not a mini-game (that's Chapter 4) - just life in
+  // the plaza: each duck wanders in short bursts with pauses, scoots away
+  // when the player gets close, faces the way it's moving, and stays inside
+  // C5_DUCK_AREA. They ignore the map's solid tiles on purpose so they can
+  // paddle across the (solid-to-the-player) pond.
+  // --------------------------------------------------------------------
+  createAmbientDucks() {
+    const hasSheet = this.textures.exists('duck_walk');
+    if (!hasSheet) {
+      console.warn('Chapter5Scene: duck_walk spritesheet missing (assets/icons/duck-walk.png) - falling back to emoji ducks');
+    }
+    this.ambientDucks = C5_DUCK_START.map(pos => {
+      const sprite = hasSheet
+        ? this.add.sprite(pos.x, pos.y, 'duck_walk', 0).setOrigin(0.5).setScale(C5_DUCK_SCALE)
+        : this.add.text(pos.x, pos.y, '\u{1F986}', { fontSize: 26 }).setOrigin(0.5);
+      sprite.setDepth(pos.y); // y-sorted with the decor; the player stays on top at 10000
+      this.physics.add.existing(sprite);
+      sprite.body.setCircle(12, sprite.width / 2 - 12, sprite.height / 2 - 12);
+      return {
+        sprite,
+        // stagger first moves so the flock doesn't start in lockstep
+        nextWanderAt: this.time.now + Phaser.Math.Between(0, C5_DUCK_WANDER_MAX_MS)
+      };
+    });
+  }
+
+  updateAmbientDucks(time) {
+    if (!this.ambientDucks) return;
+    const a = C5_DUCK_AREA;
+    const cx = (a.left + a.right) / 2;
+    const cy = (a.top + a.bottom) / 2;
+    const EDGE = 28; // within this of an edge, wander picks a direction back inward
+
+    this.ambientDucks.forEach(duck => {
+      const s = duck.sprite;
+      if (!s.body) return;
+
+      const distToPlayer = Phaser.Math.Distance.Between(this.player.x, this.player.y, s.x, s.y);
+      if (distToPlayer < C5_DUCK_FLEE_RADIUS) {
+        const angle = Phaser.Math.Angle.Between(this.player.x, this.player.y, s.x, s.y);
+        s.body.setVelocity(Math.cos(angle) * C5_DUCK_FLEE_SPEED, Math.sin(angle) * C5_DUCK_FLEE_SPEED);
+        duck.nextWanderAt = time + Phaser.Math.Between(C5_DUCK_WANDER_MIN_MS, C5_DUCK_WANDER_MAX_MS);
+      } else if (time > duck.nextWanderAt) {
+        if (Math.random() < 0.3) {
+          // a pause - ducks bobbing in place by the water read as natural
+          s.body.setVelocity(0, 0);
+        } else {
+          const nearEdge = s.x < a.left + EDGE || s.x > a.right - EDGE || s.y < a.top + EDGE || s.y > a.bottom - EDGE;
+          const wanderAngle = nearEdge
+            ? Phaser.Math.Angle.Between(s.x, s.y, cx, cy) + Phaser.Math.FloatBetween(-0.8, 0.8)
+            : Math.random() * Math.PI * 2;
+          s.body.setVelocity(Math.cos(wanderAngle) * C5_DUCK_WANDER_SPEED, Math.sin(wanderAngle) * C5_DUCK_WANDER_SPEED);
+        }
+        duck.nextWanderAt = time + Phaser.Math.Between(C5_DUCK_WANDER_MIN_MS, C5_DUCK_WANDER_MAX_MS);
+      }
+
+      // Stay inside the duck area: cancel any velocity pointing out of it
+      // (the fleeing case included, so a cornered duck slides along the edge
+      // instead of leaving the pond).
+      let vx = s.body.velocity.x;
+      let vy = s.body.velocity.y;
+      if ((s.x <= a.left && vx < 0) || (s.x >= a.right && vx > 0)) vx = 0;
+      if ((s.y <= a.top && vy < 0) || (s.y >= a.bottom && vy > 0)) vy = 0;
+      if (vx !== s.body.velocity.x || vy !== s.body.velocity.y) s.body.setVelocity(vx, vy);
+
+      // Face the direction of travel (dead zone around 0 so a duck moving
+      // mostly up/down doesn't flicker on tiny horizontal jitter).
+      if (typeof s.setFlipX === 'function') {
+        if (vx > C5_DUCK_FLIP_THRESHOLD) s.setFlipX(C5_DUCK_ART_FACES_LEFT_BY_DEFAULT);
+        else if (vx < -C5_DUCK_FLIP_THRESHOLD) s.setFlipX(!C5_DUCK_ART_FACES_LEFT_BY_DEFAULT);
+      }
+
+      // Walk cycle only while actually moving; frame 0 during pauses.
+      if (typeof s.play === 'function' && s.anims) {
+        if (s.body.speed > C5_DUCK_MOVE_THRESHOLD) {
+          s.play('duck-walk', true);
+        } else if (s.anims.isPlaying) {
+          s.anims.stop();
+          s.setFrame(0);
+        }
+      }
+
+      s.setDepth(s.y);
+    });
+  }
+
   update(time, delta) {
+    // Ducks live regardless of story mode or dialogue/quiz locks - they're
+    // background life, so they keep paddling even while the player is
+    // reading a popup.
+    this.updateAmbientDucks(time);
+
     // Ask Well is the one real-time phase in this chapter: the player
     // actually walks the plaza to catch a spark, so it runs alongside the
     // normal movement code below rather than freezing the player like
     // matching/quiz do.
     if (this.mode === 'askwell' && !this.locked) {
       this.updateAskWell(time, delta);
+    }
+
+    // Explore beat: show "Press E to look" above whichever unfound
+    // landmark the player is nearest to, same approach as Chapter1Scene's
+    // interactPrompt.
+    if (this.mode === 'explore' && !this.locked) {
+      const nearest = this.nearestExploreInteractable();
+      const npc = nearest ? null : this.nearestTalkNpc();
+      if (nearest) {
+        this.interactPrompt.setText('Press E to look').setPosition(nearest.x, nearest.promptY).setVisible(true);
+      } else if (npc) {
+        // While a report is pending the prompt sits higher so it doesn't
+        // cover the ❗ flag over the host.
+        const reporting = this.isReportTarget(npc);
+        this.interactPrompt.setText(reporting ? 'Press E to report' : 'Press E to talk')
+          .setPosition(npc.sprite.x, npc.sprite.y - (reporting ? 92 : C5_FRAME_H / 2 + 14)).setVisible(true);
+      } else {
+        this.interactPrompt.setVisible(false);
+      }
+    } else {
+      this.interactPrompt.setVisible(false);
     }
 
     if (this.locked || this.mode === 'matching' || this.mode === 'quiz' || this.mode === 'epilogue' || this.mode === 'done') {

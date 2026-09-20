@@ -45,6 +45,12 @@
  *                                   plays when a chapter is finished and the
  *                                   "Journal Page Unlocked!" panel appears.
  *
+ *   assets/audio/sfx-found.mp3      Short "found it" chime — plays the
+ *                                   instant Hiraya interacts with a
+ *                                   findable object and its popup/modal
+ *                                   appears (Prologue and every Chapter
+ *                                   that has findable objects).
+ *
  *   assets/audio/sfx-curtain-close.mp3  A cloth "swish"/whoosh — plays the
  *                                   instant the theater-curtain panels start
  *                                   sliding IN to cover the screen (leaving
@@ -57,12 +63,11 @@
  *                                   copy it twice under the two names) if
  *                                   you don't have distinct open/close foley.
  *
- *   assets/audio/sfx-type-blip.mp3  A VERY short (<80ms) "blip"/"blorp" —
- *                                   the classic Animal-Crossing-style
- *                                   gibberish talking sound. It replays once
- *                                   per letter while dialogue is typing
- *                                   itself out, so keep it tiny and
- *                                   non-fatiguing since it repeats a LOT.
+ *   assets/audio/sfx-type-blip.mp3  The DIALOGUE sound. It plays ONCE at the
+ *                                   start of every dialogue line (not once
+ *                                   per letter), so it can be a short
+ *                                   "voice" sound / blip / chirp - up to
+ *                                   about a second is fine.
  *
  *   assets/audio/sfx-footsteps.mp3  A soft, seamlessly-loopable footstep
  *                                   pattern (a couple of steps long is
@@ -73,7 +78,7 @@
  *                                   moment they let go of the keys (or
  *                                   dialogue/a cutscene takes over).
  *
- * That's 10 files total: 3 loops + 7 short one-shot effects.
+ * That's 11 files total: 3 loops + 8 short one-shot effects.
  *
  * SAFE-BY-DEFAULT: if a file above is missing/not renamed yet, Phaser just
  * fails to load THAT one file quietly — the rest of the game keeps running
@@ -93,6 +98,7 @@ const SOUND_FILES = {
   'correct':      { path: 'assets/audio/sfx-correct.mp3',      loop: false },
   'incorrect':    { path: 'assets/audio/sfx-incorrect.mp3',    loop: false },
   'complete':     { path: 'assets/audio/sfx-complete.mp3',     loop: false },
+  'found':        { path: 'assets/audio/sfx-found.mp3',        loop: false },
   'curtain-close':{ path: 'assets/audio/sfx-curtain-close.mp3', loop: false },
   'curtain-open': { path: 'assets/audio/sfx-curtain-open.mp3',  loop: false },
   'type-blip':    { path: 'assets/audio/sfx-type-blip.mp3',     loop: false },
@@ -148,13 +154,10 @@ const SoundManager = {
   _typeSound: null,
 
   /**
-   * Plays one "blip" of the gibberish dialogue-typing sound. Called from
-   * ui.js's showDialogue once per letter as the typewriter effect reveals
-   * it. Reuses a single Sound instance and re-plays it on every call
-   * (Phaser restarts an already-playing instance rather than stacking a new
-   * one), so a fast typewriter doesn't pile up overlapping copies. A small
-   * random pitch (`rate`) keeps the stream of blips from sounding like a
-   * flat machine-gun, closer to the classic AC "gibberish talking" effect.
+   * Plays the dialogue sound ONCE. Called from ui.js's showDialogue at the
+   * start of every dialogue line (previously it fired once per letter, which
+   * sounded like gibberish). Reuses a single Sound instance, so if the player
+   * clicks through lines quickly the sound restarts instead of stacking.
    * Does nothing if the file hasn't been added yet (see note above).
    */
   playTypeBlip(scene) {
@@ -162,16 +165,12 @@ const SoundManager = {
     const vol = scene.registry.get('sfxVolume');
     const volume = vol === undefined ? 0.7 : vol;
     if (!this._typeSound) this._typeSound = scene.sound.add('type-blip');
-    this._typeSound.play({ volume, rate: 0.9 + Math.random() * 0.3 });
+    this._typeSound.play({ volume });
   },
 
   /**
-   * Cuts the typing blip off immediately instead of letting it ring out.
-   * Called the instant the player skips a line (space/click while typing)
-   * AND when a line finishes typing on its own, so the blip stream always
-   * "sudden stops" in sync with the text - then simply starts up again
-   * (playTypeBlip) the moment the next dialogue line begins typing, if
-   * there is one.
+   * Cuts the dialogue sound off immediately. Called when the player skips a
+   * line (space/click while it's typing) and when the dialogue closes.
    */
   stopTypeBlip() {
     if (this._typeSound && this._typeSound.isPlaying) this._typeSound.stop();

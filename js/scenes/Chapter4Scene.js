@@ -810,14 +810,38 @@ showQuizQuestion() {
     container.add([overlay, panel, qNum, qText]);
 
     const optionButtons = [];
+    // A fixed 42px pitch between options assumed every answer fit on one
+    // line - true for short options, but Chapter 4 has some noticeably
+    // longer answer text (e.g. full role descriptions) that wraps to two
+    // lines at this width/font size and needs a taller button, or it
+    // overlaps the option below it. Measure each option's actual wrapped
+    // height first, then lay them out back-to-back with a fixed gap instead
+    // of assuming a uniform single-line height.
+    const optionFontSize = 15;
+    const optionWidth = 440;
+    const minOptionH = 36;
+    const optionGap = 10;
+    let cursorY = height / 2 - 60;
     qData.options.forEach((opt, i) => {
-      const y = height / 2 - 60 + i * 42;
+      const measure = this.add.text(0, 0, opt, {
+        fontFamily: '"Tildunk", Georgia, serif', fontSize: optionFontSize, align: 'center',
+        wordWrap: { width: optionWidth - 24 }
+      }).setVisible(false);
+      const btnH = Math.max(minOptionH, measure.height + 14);
+      measure.destroy();
+
+      const y = cursorY + btnH / 2;
       const { rect, txt } = createButton(this, width / 2, y, opt, () => {
         this.showQuizFeedback(container, optionButtons, qData, i);
-      }, { width: 440, height: 36, fontSize: 15 });
+      }, { width: optionWidth, height: btnH, fontSize: optionFontSize });
       optionButtons.push({ rect, index: i });
       container.add([rect, txt]);
+      cursorY += btnH + optionGap;
     });
+    // Where showQuizFeedback should start stacking the verdict/explanation/
+    // Continue button - below the last option regardless of how tall the
+    // options ended up being.
+    this.quizOptionsBottom = cursorY - optionGap;
   }
 
   // Locks the options, highlights the correct one (and the wrong pick, if any),
@@ -838,11 +862,15 @@ showQuizQuestion() {
     });
 
     const { width, height } = this.scale;
-    const verdict = this.add.text(width / 2, height / 2 + 96, isCorrect ? 'Correct!' : 'Not quite.', {
+    // Anchor to whichever is lower: the original fixed spot, or just below
+    // the last option button (which may have grown taller than the default
+    // single-line height - see showQuizQuestion).
+    const verdictY = Math.max(height / 2 + 96, (this.quizOptionsBottom ?? (height / 2 - 60)) + 20);
+    const verdict = this.add.text(width / 2, verdictY, isCorrect ? 'Correct!' : 'Not quite.', {
       fontFamily: '"Tildunk", Georgia, serif', fontSize: 17, fontStyle: 'bold',
       color: isCorrect ? '#3c7a3e' : '#9c3b2e'
     }).setOrigin(0.5);
-    const explanationTxt = this.add.text(width / 2, height / 2 + 118, qData.explanation || '', {
+    const explanationTxt = this.add.text(width / 2, verdictY + 22, qData.explanation || '', {
       fontFamily: '"Tildunk", sans-serif', fontSize: 13, color: '#3b2410', align: 'center',
       wordWrap: { width: 460 }
     }).setOrigin(0.5, 0);

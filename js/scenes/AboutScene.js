@@ -27,7 +27,11 @@ class AboutScene extends Phaser.Scene {
       fontFamily: '"Tildunk", Georgia, serif', fontSize: 17, color: '#fff8e7'
     }).setOrigin(0.5);
 
-    const creditsTab = this.add.rectangle(width / 2 + 90, 84, 160, 38, 0x33363f, 1)
+    // 0x33363f (slate gray) is this game's "locked/disabled" color
+    // elsewhere (see the Chapters list) - using it for the inactive-but-
+    // still-clickable Credits tab made it look disabled, same issue as the
+    // Settings option rows (see ui.js/SettingsScene.js for the identical fix).
+    const creditsTab = this.add.rectangle(width / 2 + 90, 84, 160, 38, 0x6b4f30, 1)
       .setStrokeStyle(2, 0xf5e2c8)
       .setInteractive({ useHandCursor: true });
     const creditsTabTxt = this.add.text(width / 2 + 90, 84, 'Credits', {
@@ -52,7 +56,7 @@ class AboutScene extends Phaser.Scene {
   showTab(tab) {
     this.activeTab = tab;
     Object.entries(this.tabButtons).forEach(([key, { rect }]) => {
-      rect.setFillStyle(key === tab ? 0x9c3b2e : 0x33363f);
+      rect.setFillStyle(key === tab ? 0x9c3b2e : 0x6b4f30);
     });
 
     this.contentContainer.removeAll(true);

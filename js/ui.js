@@ -21,7 +21,14 @@ function createButton(scene, x, y, label, onClick, opts = {}) {
   const txt = scene.add.text(x, y, label, {
     fontFamily: '"Tildunk", Georgia, serif',
     fontSize,
-    color: '#fff8e7'
+    color: '#fff8e7',
+    align: 'center',
+    // Buttons here always had a fixed pixel width, but some callers (quiz
+    // answer options especially) can hand this a label much longer than
+    // that width at this fontSize - without a wrap constraint the text just
+    // renders past the rectangle on both sides instead of onto a second
+    // line, spilling over whatever sits next to the button.
+    wordWrap: { width: w - 24 }
   }).setOrigin(0.5).setScrollFactor(0);
 
   rect.on('pointerover', () => rect.setFillStyle(hoverColor, alpha));
@@ -155,14 +162,45 @@ function showDialogue(scene, speaker, lines, onComplete, portraits) {
 
   const panel = scene.add.rectangle(width / 2, panelY, width - 40, panelH, 0x2c2f37, 0.96)
     .setStrokeStyle(3, 0xf5e2c8);
-  const nameTag = scene.add.rectangle(90, panelTop, 140, 32, 0x9c3b2e, 0.96)
+  // The name tag used to sit exactly on panelTop (the panel's top border),
+  // which put half its height above the panel - overlapping the world
+  // scene rendered behind/above the dialogue box instead of reading as
+  // part of the box. Nudged down so it's still a "tab" poking up slightly,
+  // but sits mostly inside the panel instead of mostly outside it.
+  const nameTagY = panelTop + 14;
+  const nameTag = scene.add.rectangle(90, nameTagY, 140, 32, 0x9c3b2e, 0.96)
     .setStrokeStyle(2, 0xf5e2c8);
-  const nameTxt = scene.add.text(90, panelTop, speaker, {
+  const nameTxt = scene.add.text(90, nameTagY, speaker, {
     fontFamily: '"Tildunk", Georgia, serif', fontSize: 16, color: '#fff8e7'
   }).setOrigin(0.5);
-  const bodyTxt = scene.add.text(40 + 20, panelTop + 18, '', {
+
+  // --- optional speaker portrait, top-right, overlapping the panel's top edge ---
+  // Fixed card size/position (never changes between poses) - each portrait image
+  // is contain-fit inside it (scaled to fill the box without cropping, centered),
+  // so swapping poses mid-dialogue never makes the box grow/shrink/shift.
+  // Geometry computed up front (before bodyTxt) so the text's word-wrap width
+  // can stop short of the portrait's left edge instead of running underneath
+  // it - previously the wrap width used the full panel width regardless of
+  // whether a portrait was showing, so a long first line would render
+  // partly hidden behind the picture (see setPortrait below for the image itself).
+  const PORTRAIT_BOX_W = 120;
+  const PORTRAIT_BOX_H = 176;
+  const FRAME_PAD = 16;
+  const frameCenterX = (width - 34) - PORTRAIT_BOX_W / 2;
+  const frameCenterY = (panelTop + 24) - PORTRAIT_BOX_H / 2;
+  const frameLeftEdge = frameCenterX - (PORTRAIT_BOX_W + FRAME_PAD) / 2;
+
+  const bodyTextX = 40 + 20;
+  const bodyWrapWidth = portraits
+    ? Math.max(160, frameLeftEdge - bodyTextX - 16)
+    : width - 100;
+  // Text used to start right at panelTop + 18, almost flush with the name
+  // tag above it (which itself used to overlap the panel's border - see
+  // nameTagY). Now that the tag sits lower/more enclosed, give the body
+  // text a bit more clearance below it too.
+  const bodyTxt = scene.add.text(bodyTextX, panelTop + 40, '', {
     fontFamily: '"Tildunk", sans-serif', fontSize: 17, color: '#f5e2c8',
-    wordWrap: { width: width - 100 }
+    wordWrap: { width: bodyWrapWidth }
   }).setOrigin(0, 0);
   const hint = scene.add.text(width - 60, panelY + panelH / 2 - 14, '▶ space / click', {
     fontFamily: '"Tildunk", sans-serif', fontSize: 12, color: '#9aa0aa'
@@ -171,15 +209,6 @@ function showDialogue(scene, speaker, lines, onComplete, portraits) {
   container.add([panel, nameTag, nameTxt, bodyTxt, hint]);
   panel.setInteractive().setScrollFactor(0);
 
-  // --- optional speaker portrait, top-right, overlapping the panel's top edge ---
-  // Fixed card size/position (never changes between poses) - each portrait image
-  // is contain-fit inside it (scaled to fill the box without cropping, centered),
-  // so swapping poses mid-dialogue never makes the box grow/shrink/shift.
-  const PORTRAIT_BOX_W = 120;
-  const PORTRAIT_BOX_H = 176;
-  const FRAME_PAD = 16;
-  const frameCenterX = (width - 34) - PORTRAIT_BOX_W / 2;
-  const frameCenterY = (panelTop + 24) - PORTRAIT_BOX_H / 2;
   let portrait = null;
   let portraitFrame = null;
 
@@ -215,28 +244,27 @@ function showDialogue(scene, speaker, lines, onComplete, portraits) {
   let currentLine = '';
   let charIndex = 0;
 
-  const stopTyping = () => {
+  // `cutSound` = true cuts the dialogue sound off immediately. That's used when
+  // the player skips the line or the dialogue closes. When a line simply
+  // finishes typing on its own we let the sound play out instead, so a
+  // slightly longer sound isn't chopped off mid-way.
+  const stopTyping = (cutSound = false) => {
     if (typeTimer) { typeTimer.remove(false); typeTimer = null; }
     typing = false;
-    // Sudden-stop the gibberish typing blip - whether we got here because the
-    // line finished on its own or because the player skipped ahead with
-    // space/click. It'll start right back up (see typeNextChar) the moment
-    // the next line begins typing, if there is one.
-    SoundManager.stopTypeBlip();
+    if (cutSound) SoundManager.stopTypeBlip();
   };
 
   const completeLine = () => {
-    stopTyping();
+    stopTyping(true);
     bodyTxt.setText(currentLine);
   };
 
   const typeNextChar = () => {
     charIndex++;
     bodyTxt.setText(currentLine.slice(0, charIndex));
-    // Gibberish "talking" blip - one per visible letter, skipped on
-    // whitespace so spaces between words don't blip.
-    const lastChar = currentLine[charIndex - 1];
-    if (lastChar && lastChar.trim() !== '') SoundManager.playTypeBlip(scene);
+    // NOTE: no sound per letter anymore - the dialogue sound now plays just
+    // ONCE per line (see showLine), because a blip on every letter sounded
+    // like gibberish.
     if (charIndex >= currentLine.length) stopTyping();
   };
 
@@ -250,6 +278,8 @@ function showDialogue(scene, speaker, lines, onComplete, portraits) {
     }
     typing = true;
     typeTimer = scene.time.addEvent({ delay: TYPE_MS_PER_CHAR, callback: typeNextChar, loop: true });
+    // One dialogue sound per line (script), played as the line starts.
+    SoundManager.playTypeBlip(scene);
   };
   showLine();
 
@@ -263,7 +293,7 @@ function showDialogue(scene, speaker, lines, onComplete, portraits) {
     // Line's already fully shown - move on to the next one.
     i++;
     if (i >= lines.length) {
-      stopTyping();
+      stopTyping(true);
       panel.off('pointerdown', advance);
       scene.input.keyboard.off('keydown-SPACE', advance);
       container.destroy();
@@ -287,13 +317,22 @@ function showDialogue(scene, speaker, lines, onComplete, portraits) {
 function makeSettingsOptionRow(scene, options, centerX, y, regKey, onSelect) {
   const spacing = 160;
   const startX = centerX - ((options.length - 1) * spacing) / 2;
-  const current = scene.registry.get(regKey);
+  const stored = scene.registry.get(regKey);
+  // Highlight the option closest to the stored value, so a value that
+  // doesn't exactly match one of the buttons still shows a selection.
+  const current = stored === undefined
+    ? options[0][1]
+    : options.reduce((best, [, v]) => Math.abs(v - stored) < Math.abs(best - stored) ? v : best, options[0][1]);
   const buttons = [];
   const objects = [];
 
   options.forEach(([label, val], i) => {
     const x = startX + i * spacing;
-    const rect = scene.add.rectangle(x, y, 130, 40, val === current ? 0x9c3b2e : 0x33363f, 1)
+    // Same reasoning as SettingsScene's identical row: 0x33363f doubles as
+    // this game's "locked/disabled" color (see the Chapters list), so an
+    // unselected-but-clickable option shouldn't borrow it - use the warm
+    // brown instead, or every non-active choice reads as disabled.
+    const rect = scene.add.rectangle(x, y, 130, 40, val === current ? 0x9c3b2e : 0x6b4f30, 1)
       .setStrokeStyle(2, 0xf5e2c8)
       .setInteractive({ useHandCursor: true })
       .setScrollFactor(0);
@@ -305,7 +344,7 @@ function makeSettingsOptionRow(scene, options, centerX, y, regKey, onSelect) {
     rect.on('pointerdown', () => {
       SoundManager.play(scene, 'click');
       scene.registry.set(regKey, val);
-      buttons.forEach(b => b.rect.setFillStyle(b.val === val ? 0x9c3b2e : 0x33363f));
+      buttons.forEach(b => b.rect.setFillStyle(b.val === val ? 0x9c3b2e : 0x6b4f30));
       if (onSelect) onSelect(val);
     });
 
@@ -345,16 +384,23 @@ function showSettingsModal(scene) {
 
   addLabel(100, 'Movement Speed');
   container.add(makeSettingsOptionRow(scene,
-    [['Slow', 110], ['Normal', 160], ['Fast', 220]], width / 2, 136, 'playerSpeed'));
+    [['Slow', 110], ['Normal', 160], ['Fast', 220]], width / 2, 136, 'playerSpeed',
+    // Chapter scenes cache the speed on `scene.speed` once in create() and
+    // read it into player velocity every frame from there (not from the
+    // registry directly) - so without this, picking a new speed here
+    // updated the saved setting but had no visible effect until the player
+    // left and re-entered the chapter. Setting it live on the scene fixes
+    // that, same as the onSelect callbacks already used for music/sfx above.
+    (val) => { if (typeof scene.speed === 'number') scene.speed = val; }));
 
   addLabel(184, 'Music');
   container.add(makeSettingsOptionRow(scene,
-    [['Off', 0], ['Low', 0.3], ['Normal', 0.6]], width / 2, 220, 'musicVolume',
+    [['Off', 0], ['Low', 0.3], ['Normal', 0.5]], width / 2, 220, 'musicVolume',
     (val) => SoundManager.setMusicVolume(scene, val)));
 
   addLabel(268, 'Sound Effects');
   container.add(makeSettingsOptionRow(scene,
-    [['Off', 0], ['Low', 0.4], ['Normal', 0.8]], width / 2, 304, 'sfxVolume',
+    [['Off', 0], ['Low', 0.4], ['Normal', 0.7]], width / 2, 304, 'sfxVolume',
     (val) => SoundManager.setSfxVolume(scene, val)));
 
   const { rect, txt } = createButton(scene, width / 2, height - 50, 'Back', () => {
@@ -487,6 +533,41 @@ function curtainOpen(scene, onComplete) {
 }
 
 /**
+ * Small non-blocking banner that slides in from the top, sits for a moment,
+ * then fades itself out - for nudges like "go talk to so-and-so now" where a
+ * full showInfoPopup (dead-center, click-to-dismiss, locks input) would be
+ * more interruption than the moment needs. Doesn't touch scene.locked, so
+ * the player can keep walking while it's up.
+ */
+function showToast(scene, text, duration = 2600) {
+  const { width } = scene.scale;
+  const y = 64;
+  const container = scene.add.container(width / 2, y - 30).setDepth(10400).setScrollFactor(0).setAlpha(0);
+
+  const txt = scene.add.text(0, 0, text, {
+    fontFamily: '"Tildunk", sans-serif', fontSize: 16, color: '#fff8e7', fontStyle: 'bold'
+  }).setOrigin(0.5);
+  const panel = scene.add.rectangle(0, 0, txt.width + 44, 44, 0x9c3b2e, 0.95)
+    .setStrokeStyle(2, 0xf5e2c8);
+
+  container.add([panel, txt]);
+
+  scene.tweens.add({
+    targets: container, y, alpha: 1, duration: 260, ease: 'Cubic.easeOut',
+    onComplete: () => {
+      scene.time.delayedCall(duration, () => {
+        scene.tweens.add({
+          targets: container, alpha: 0, y: y - 16, duration: 320, ease: 'Cubic.easeIn',
+          onComplete: () => container.destroy()
+        });
+      });
+    }
+  });
+
+  return container;
+}
+
+/**
  * Small centered info popup for object interactions - a title + a couple sentences
  * of "you don't feel like you're studying" educational content, with an OK button.
  */
@@ -516,4 +597,120 @@ function showInfoPopup(scene, title, body, onClose) {
     onClose && onClose();
   }, { width: 120, height: 40, fontSize: 16 });
   container.add([rect, txt]);
+}
+
+/**
+ * "Found it" popup with the item's icon on top - same cream/maroon panel
+ * Chapter 5 uses for its traditions, now shared so Prologue / Chapters 1-3
+ * can show it too. `o` is the interactable object: it needs `name` and
+ * `info`, and the icon comes from `o.iconKey` if set, otherwise from the
+ * texture of `o.rect` (the on-map sprite). If there's no icon texture at
+ * all (e.g. the object fell back to a plain rectangle), it quietly falls
+ * back to the old text-only showInfoPopup(), so a missing PNG can never
+ * block the interaction. `onClose` runs exactly once, on dismiss
+ * (Continue button, or E / Space / Enter).
+ */
+function showFoundItemPopup(scene, o, onClose) {
+  SoundManager.play(scene, 'found');
+
+  const texKey = o.iconKey || (o.rect && o.rect.texture && o.rect.texture.key);
+  if (!texKey || texKey === '__DEFAULT' || texKey === '__MISSING' || !scene.textures.exists(texKey)) {
+    showInfoPopup(scene, o.name.toUpperCase(), o.info, onClose);
+    return;
+  }
+
+  const { width, height } = scene.scale;
+  const iconSize = Phaser.Math.Clamp(height - 300, 96, 160);
+  const panelW = 500;
+
+  // Build the text first so the panel can grow to fit longer descriptions.
+  const info = scene.add.text(0, 0, o.info || '', {
+    fontFamily: '"Tildunk", sans-serif', fontSize: 15, color: '#3b2410', align: 'center',
+    wordWrap: { width: panelW - 60 }
+  }).setOrigin(0.5, 0).setScrollFactor(0);
+  const panelH = iconSize + 190 + info.height;
+  const top = height / 2 - panelH / 2;
+
+  const container = scene.add.container(0, 0).setDepth(10500).setScrollFactor(0);
+  const overlay = scene.add.rectangle(width / 2, height / 2, width, height, 0x000000, 0.55)
+    .setInteractive().setScrollFactor(0);
+  const panel = scene.add.rectangle(width / 2, height / 2, panelW, panelH, 0xfff8e7, 1)
+    .setStrokeStyle(4, 0x9c3b2e).setScrollFactor(0);
+
+  const iconY = top + 32 + iconSize / 2;
+  const plate = scene.add.rectangle(width / 2, iconY, iconSize + 20, iconSize + 20, 0xf5e2c8, 1)
+    .setStrokeStyle(3, 0xd8b04a).setScrollFactor(0);
+  const icon = scene.add.image(width / 2, iconY, texKey).setScrollFactor(0);
+  const iconScale = iconSize / Math.max(icon.width, icon.height);
+  icon.setScale(iconScale * 0.6);
+  scene.tweens.add({ targets: icon, scale: iconScale, duration: 260, ease: 'Back.Out' });
+
+  const title = scene.add.text(width / 2, top + iconSize + 64, o.name.toUpperCase(), {
+    fontFamily: '"Tildunk", Georgia, serif', fontSize: 22, color: '#9c3b2e', fontStyle: 'bold'
+  }).setOrigin(0.5).setScrollFactor(0);
+  info.setPosition(width / 2, top + iconSize + 92);
+
+  container.add([overlay, panel, plate, icon, title, info]);
+
+  let closed = false;
+  const closeKeys = ['keydown-E', 'keydown-SPACE', 'keydown-ENTER'];
+  const close = () => {
+    if (closed) return;
+    closed = true;
+    closeKeys.forEach(k => scene.input.keyboard.off(k, close));
+    container.destroy();
+    if (onClose) onClose();
+  };
+
+  const { rect, txt } = createButton(scene, width / 2, top + panelH - 36, 'Continue', close,
+    { width: 190, height: 44, fontSize: 17, color: 0x3c7a3e, hoverColor: 0x4c9a4e });
+  container.add([rect, txt]);
+
+  // Keyboard dismiss is armed after a beat so the very E press that opened
+  // the popup can't close it again in the same breath.
+  scene.time.delayedCall(250, () => {
+    if (!closed) closeKeys.forEach(k => scene.input.keyboard.on(k, close));
+  });
+}
+
+/**
+ * How close (in px) the player has to be to an object's *edge* to interact
+ * with it. Measured from the player's collision body (her feet/legs) to the
+ * nearest point of the object's on-screen rectangle, so it works the same
+ * from the top, bottom, left and right no matter how big the object is.
+ * (The old check was centre-to-centre with a flat 80px radius, which is
+ * too short from above tall objects: the body can't get any closer than
+ * half the object's height + the gap between her body and sprite centre.)
+ */
+const OBJECT_INTERACT_REACH = 40;
+
+function interactGapToObject(player, target) {
+  const b = target.getBounds();
+  const c = player.body ? player.body.center : player;
+  const dx = Math.max(b.left - c.x, 0, c.x - b.right);
+  const dy = Math.max(b.top - c.y, 0, c.y - b.bottom);
+  return Math.sqrt(dx * dx + dy * dy);
+}
+
+/**
+ * Texture key of an interactable's on-map icon (o.iconKey if set, else the
+ * texture of o.rect), or null if it has no real icon art (plain rectangle
+ * fallback). Used by the Task/Objectives modals to draw each item's icon.
+ */
+function getObjectIconKey(scene, o) {
+  const k = o.iconKey || (o.rect && o.rect.texture && o.rect.texture.key);
+  if (!k || k === '__DEFAULT' || k === '__MISSING' || !scene.textures.exists(k)) return null;
+  return k;
+}
+
+/**
+ * One row's icon in the Task modal: full color once found, a dark
+ * silhouette until then (same look as Chapter 5's Objectives panel).
+ */
+function addTaskRowIcon(scene, container, x, y, iconKey, found) {
+  if (!iconKey || !scene.textures.exists(iconKey)) return;
+  const ic = scene.add.image(x, y, iconKey).setScrollFactor(0);
+  ic.setScale(26 / Math.max(ic.width, ic.height));
+  if (!found) ic.setTint(0x2a1a0c).setAlpha(0.4);
+  container.add(ic);
 }
