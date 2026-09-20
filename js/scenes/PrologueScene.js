@@ -106,7 +106,7 @@ const PROLOGUE_MAP_DATA = {
       "h": 46,
       "color": "#8b4513",
       "collidable": true,
-      "info": "The town plaza's well has provided water to generations of Pateros residents."
+      "info": "Wells like this once served whole neighborhoods in Philippine towns, before piped water reached every home."
     },
     {
       "key": "stall",
@@ -119,7 +119,7 @@ const PROLOGUE_MAP_DATA = {
       "h": 46,
       "color": "#cd853f",
       "collidable": false,
-      "info": "Small stalls like this once lined the plaza, selling local goods and produce."
+      "info": "Pateros grew up as a river trading port, so market stalls have long been part of its story."
     },
     {
       "key": "statue",
@@ -132,7 +132,7 @@ const PROLOGUE_MAP_DATA = {
       "h": 46,
       "color": "#a0522d",
       "collidable": true,
-      "info": "A statue commemorating the founders of Pateros stands in the plaza's center."
+      "info": "Monuments in Pateros remember its heroes, like the 1922 monument to the Martires del '96."
     },
     {
       "key": "obj_house_1",
@@ -2087,7 +2087,7 @@ class PrologueScene extends Phaser.Scene {
     showDialogue(this, 'Lola Nena', [
       'Excellent! You have found the well, the market stall, and the statue.',
       'These landmarks remind us of Pateros\'s enduring community spirit.',
-      'Here is the first clue for your grandfather\'s journal.',
+      'I have added the opening page to your grandfather\'s journal. You can read it any time with the Journal button.',
       'Now proceed to the riverside to begin Chapter 1.'
     ], () => {
       this.startChapter1();
@@ -2154,6 +2154,12 @@ class PrologueScene extends Phaser.Scene {
     // after completing chapter it will mark page 1 as unlocked.
     // Optionally we could set a flag that prologue is done.
     this.registry.set('prologueCompleted', true);
+    // Collect the Prologue's opening page of Lolo's Journal (page id 0), both
+    // for this session and in storage so it survives a reload.
+    const journalPages = this.registry.get('journalPages') || [];
+    if (!journalPages.includes(0)) journalPages.push(0);
+    this.registry.set('journalPages', journalPages);
+    ChapterProgress.addJournalPage(0);
     // Persist to localStorage (not just the in-memory registry) so Chapter 1
     // still shows up unlocked in the main menu's Chapter list even after a
     // page reload.
@@ -2249,54 +2255,10 @@ showObjectivesModal() {
     container.add([rect, txt]);
   }
 
-showJournalModal() {
-     const { width, height } = this.scale;
-     const pages = this.registry.get('journalPages') || [];
-     const container = this.add.container(0, 0).setDepth(10500).setScrollFactor(0);
-    const overlay = this.add.rectangle(width / 2, height / 2, width, height, 0x000000, 0.45).setInteractive().setScrollFactor(0);
-
-    const rowH = 34;
-    const panelH = 110 + 5 * rowH; // we have 5 chapters total
-    const panel = this.add.rectangle(width / 2, height / 2, 440, panelH, 0xfff8e7, 1).setStrokeStyle(4, 0x9c3b2e);
-    const top = height / 2 - panelH / 2;
-
-    const title = this.add.text(width / 2, top + 28, "Lola's Journal", {
-      fontFamily: '"Tildunk", Georgia, serif', fontSize: 20, color: '#9c3b2e', fontStyle: 'bold'
-    }).setOrigin(0.5);
-
-    container.add([overlay, panel, title]);
-
-    const JOURNAL_CHAPTERS = [
-      { id: 1, title: 'Aguho: The River Remembers' },
-      { id: 2, title: 'The Birth of a Municipality' },
-      { id: 3, title: 'Pateros in the Revolution' },
-      { id: 4, title: 'The Balut Capital' },
-      { id: 5, title: 'A Living Heritage' }
-    ];
-
-    JOURNAL_CHAPTERS.forEach((ch, i) => {
-      const unlocked = pages.includes(ch.id);
-      const y = top + 62 + i * rowH;
-      const mark = this.add.text(width / 2 - 198, y, unlocked ? '✓' : '🔒', {
-        fontFamily: '"Tildunk", sans-serif', fontSize: 15,
-        color: unlocked ? '#3c7a3e' : '#9aa0aa'
-      }).setOrigin(0, 0.5);
-      const label = this.add.text(width / 2 - 172, y, `Page ${ch.id}: ${ch.title}`, {
-        fontFamily: '"Tildunk", sans-serif', fontSize: 13,
-        color: unlocked ? '#3b2410' : '#9aa0aa',
-        wordWrap: { width: 300 }
-      }).setOrigin(0, 0.5);
-      const status = this.add.text(width / 2 + 198, y, unlocked ? 'Unlocked' : 'Locked', {
-        fontFamily: '"Tildunk", sans-serif', fontSize: 11,
-        color: unlocked ? '#3c7a3e' : '#9aa0aa'
-      }).setOrigin(1, 0.5);
-      container.add([mark, label, status]);
-    });
-
-    const { rect, txt } = createButton(this, width / 2, top + panelH - 30, 'Close', () => {
-      container.destroy();
-      this.locked = false;
-    }, { width: 140, height: 36, fontSize: 15 });
-    container.add([rect, txt]);
+  // --- Journal: opens Lolo's Journal (journalBook.js) on top of this scene.
+  // The scene is paused while the book is open; the HUD button already set
+  // this.locked = true, so hand control back when the book closes.
+  showJournalModal() {
+    openJournalBook(this, { onClose: () => { this.locked = false; } });
   }
 }

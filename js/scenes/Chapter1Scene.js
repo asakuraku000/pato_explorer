@@ -2,18 +2,8 @@ const C1_FRAME_W = 44;
 const C1_FRAME_H = 78;
 const INTERACT_RADIUS = 80;
 
-// Full journal table of contents (per the story doc) - used by the Journal
-// modal to show which pages have been unlocked so far via this.registry
-// 'journalPages'. Only Chapter 1 exists right now, so pages 2-5 will simply
-// stay "Locked" until those chapters are built and push their own id in.
-const JOURNAL_CHAPTERS = [
-  { id: 1, title: 'Aguho: The River Remembers' },
-  { id: 2, title: 'The Birth of a Municipality' },
-  { id: 3, title: 'Pateros in the Revolution' },
-  { id: 4, title: 'The Balut Capital' },
-  { id: 5, title: 'A Living Heritage' }
-];
-
+// The journal itself (its pages, and which are unlocked) lives in
+// journalBook.js / journalData.js; scenes just call openJournalBook(this).
 // ---------------------------------------------------------------------------
 // MAP DATA - exported straight from the map editor (editor.html -> "Export
 // JSON" for the chapter1_river_remembers map). This is a verbatim copy of
@@ -127,7 +117,7 @@ const CHAPTER1_MAP_DATA = {
       "h": 46,
       "color": "#b5893b",
       "collidable": false,
-      "info": "Rice, fish, and woven goods were common items traded along the river."
+      "info": "River ports like Aguho moved everyday goods, such as rice, fish, and woven items, by boat."
     },
     {
       "key": "agoho",
@@ -153,7 +143,7 @@ const CHAPTER1_MAP_DATA = {
       "h": 46,
       "color": "#8a5a3a",
       "collidable": true,
-      "info": "Riverside houses were built close to the water for easy trade and travel."
+      "info": "Families lived close to the river, the main route for trade and travel."
     },
     {
       "key": "stall",
@@ -3876,48 +3866,11 @@ showObjectivesModal() {
     container.add([rect, txt]);
   }
 
-  // --- Journal modal: which pages are unlocked vs still locked ------------
-showJournalModal() {
-     const { width, height } = this.scale;
-     const pages = this.registry.get('journalPages') || [];
-     const container = this.add.container(0, 0).setDepth(10500).setScrollFactor(0);
-    const overlay = this.add.rectangle(width / 2, height / 2, width, height, 0x000000, 0.45).setInteractive().setScrollFactor(0);
-
-    const rowH = 34;
-    const panelH = 110 + JOURNAL_CHAPTERS.length * rowH;
-    const panel = this.add.rectangle(width / 2, height / 2, 440, panelH, 0xfff8e7, 1).setStrokeStyle(4, 0x9c3b2e);
-    const top = height / 2 - panelH / 2;
-
-    const title = this.add.text(width / 2, top + 28, "Lola's Journal", {
-      fontFamily: '"Tildunk", Georgia, serif', fontSize: 20, color: '#9c3b2e', fontStyle: 'bold'
-    }).setOrigin(0.5);
-
-    container.add([overlay, panel, title]);
-
-    JOURNAL_CHAPTERS.forEach((ch, i) => {
-      const unlocked = pages.includes(ch.id);
-      const y = top + 62 + i * rowH;
-      const mark = this.add.text(width / 2 - 198, y, unlocked ? '✓' : '🔒', {
-        fontFamily: '"Tildunk", sans-serif', fontSize: 15,
-        color: unlocked ? '#3c7a3e' : '#9aa0aa'
-      }).setOrigin(0, 0.5);
-      const label = this.add.text(width / 2 - 172, y, `Page ${ch.id}: ${ch.title}`, {
-        fontFamily: '"Tildunk", sans-serif', fontSize: 13,
-        color: unlocked ? '#3b2410' : '#9aa0aa',
-        wordWrap: { width: 300 }
-      }).setOrigin(0, 0.5);
-      const status = this.add.text(width / 2 + 198, y, unlocked ? 'Unlocked' : 'Locked', {
-        fontFamily: '"Tildunk", sans-serif', fontSize: 11,
-        color: unlocked ? '#3c7a3e' : '#9aa0aa'
-      }).setOrigin(1, 0.5);
-      container.add([mark, label, status]);
-    });
-
-    const { rect, txt } = createButton(this, width / 2, top + panelH - 30, 'Close', () => {
-      container.destroy();
-      this.locked = false;
-    }, { width: 140, height: 36, fontSize: 15 });
-    container.add([rect, txt]);
+  // --- Journal: opens Lolo's Journal (journalBook.js) on top of this scene.
+  // The scene is paused while the book is open; the HUD button already set
+  // this.locked = true, so hand control back when the book closes.
+  showJournalModal() {
+    openJournalBook(this, { onClose: () => { this.locked = false; } });
   }
 
   nearestInteractable() {
@@ -4267,7 +4220,7 @@ showJournalModal() {
     this.locked = true;
     showDialogue(this, 'Lola Nena', [
       `We made it to the embarcadero — and you brought in ${loads} of good trade cargo along the way.`,
-      'That\'s the embarcadero for you — rice, dried fish, woven goods, all of it moving by boat, day after day.',
+      'That\'s the embarcadero for you — boats coming and going with everyday goods.',
       'Let\'s see what you remember.'
     ], () => this.startQuiz(), ['lola-happy', 'lola-happy', 'lola-wink']);
   }
@@ -4445,6 +4398,8 @@ finishChapter() {
      const pages = this.registry.get('journalPages') || [];
      if (!pages.includes(1)) pages.push(1);
      this.registry.set('journalPages', pages);
+    // Persist the page too, so it is still readable after a reload.
+    ChapterProgress.addJournalPage(1);
      // Persist to localStorage so Chapter 2 shows up unlocked in the main
      // menu's Chapter list even after a page reload.
      ChapterProgress.unlockNextAfter('Chapter1');
@@ -4476,13 +4431,16 @@ finishChapter() {
 
     container.add([overlay, panel, title, scoreTxt, flavor]);
 
-    const { rect, txt } = createButton(this, width / 2, height / 2 + 88, 'Continue', () => {
+    const { rect, txt } = createButton(this, width / 2 + 95, height / 2 + 88, 'Continue', () => {
       // Curtain-close here (with its whoosh) pairs with Chapter2Scene's own
       // curtain-open on create(), so this reads as one continuous transition
       // - and, crucially, one you can actually hear - rather than a hard cut.
       curtainClose(this, () => this.scene.start('Chapter2'));
-    }, { width: 160, height: 44, fontSize: 17, color: 0x3c7a3e, hoverColor: 0x4c9a4e });
+    }, { width: 170, height: 44, fontSize: 17, color: 0x3c7a3e, hoverColor: 0x4c9a4e });
     container.add([rect, txt]);
+
+    // Lets the player read the page they just collected before moving on.
+    JournalBook.addReadButton(this, container, 1, width / 2 - 95, height / 2 + 88, { width: 170, height: 44, fontSize: 16 });
   }
 
   update(time, delta) {

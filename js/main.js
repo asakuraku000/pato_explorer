@@ -14,7 +14,7 @@ const config = {
     default: 'arcade',
     arcade: { debug: false }
   },
-  scene: [PreloadScene, MenuScene, AboutScene, SettingsScene, PrologueScene, GameScene, Chapter1Scene, Chapter2Scene, Chapter3Scene, Chapter4Scene, Chapter5Scene]
+  scene: [PreloadScene, MenuScene, AboutScene, SettingsScene, PrologueScene, GameScene, Chapter1Scene, Chapter2Scene, Chapter3Scene, Chapter4Scene, Chapter5Scene, JournalScene]
 };
 
 // Fullscreen button under the canvas. The whole page (<html>) goes

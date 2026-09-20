@@ -72,6 +72,10 @@ class PreloadScene extends Phaser.Scene {
     this.load.image('hiraya-journal', 'assets/images/hiraya-journal.png');
     this.load.image('hiraya-thinking', 'assets/images/hiraya-thinking.png');
 
+    // Every drawing Lolo's Journal shows (journalBook.js / journalData.js).
+    // Loading them here means the book opens instantly from any scene.
+    JournalBook.preload(this);
+
     // Don Emilio - same grid convention as hiraya/lola: one sheet, 44x78 frames,
     // frames 0-11 down, 12-19 up, 24-34 side (flip X for right). Chroma-keyed to
     // transparent from the user-supplied character sheet.

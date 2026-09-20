@@ -61,5 +61,59 @@ const ChapterProgress = (() => {
     unlock(CHAPTER_ORDER[idx + 1].key);
   }
 
-  return { CHAPTER_ORDER, isUnlocked, unlock, unlockNextAfter };
+  // ---- Journal pages ------------------------------------------------------
+  // Which journal pages the player has collected: 0 = Prologue, 1-5 = the
+  // chapters. Saved separately from the unlocked chapters so a finished
+  // chapter's page is still readable after a reload. The Journal book
+  // (journalBook.js) reads these; the chapter scenes add to them when a
+  // chapter is finished.
+  const JOURNAL_KEY = 'patoExplorer.journalPages';
+  const MAX_JOURNAL_PAGE = CHAPTER_ORDER.length - 1;
+
+  function cleanPages(list) {
+    if (!Array.isArray(list)) return [];
+    const seen = new Set();
+    list.forEach((n) => {
+      if (Number.isInteger(n) && n >= 0 && n <= MAX_JOURNAL_PAGE) seen.add(n);
+    });
+    return Array.from(seen).sort((a, b) => a - b);
+  }
+
+  function getJournalPages() {
+    try {
+      const raw = localStorage.getItem(JOURNAL_KEY);
+      return raw ? cleanPages(JSON.parse(raw)) : [];
+    } catch (e) {
+      return [];
+    }
+  }
+
+  function saveJournalPages(list) {
+    try {
+      localStorage.setItem(JOURNAL_KEY, JSON.stringify(list));
+    } catch (e) {
+      // Same as save(): fails silently, pages just won't persist this session.
+    }
+  }
+
+  function addJournalPage(n) {
+    const list = getJournalPages();
+    if (Number.isInteger(n) && !list.includes(n)) {
+      saveJournalPages(cleanPages(list.concat(n)));
+    }
+    return getJournalPages();
+  }
+
+  // Fold pages that only exist in this session's registry into storage.
+  function mergeJournalPages(extra) {
+    const stored = getJournalPages();
+    const merged = cleanPages(stored.concat(Array.isArray(extra) ? extra : []));
+    if (merged.length !== stored.length) saveJournalPages(merged);
+    return merged;
+  }
+
+  return {
+    CHAPTER_ORDER, isUnlocked, unlock, unlockNextAfter,
+    getJournalPages, addJournalPage, mergeJournalPages
+  };
 })();

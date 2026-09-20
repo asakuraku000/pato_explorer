@@ -1,9 +1,8 @@
 const C2_FRAME_W = 44;
 const C2_FRAME_H = 78;
 
-// NOTE: INTERACT_RADIUS and JOURNAL_CHAPTERS are declared once in
-// Chapter1Scene.js (loaded before this file in index.html) and reused here
-// as-is - see that file for the shared journal table of contents.
+// NOTE: INTERACT_RADIUS is declared once in Chapter1Scene.js (loaded before
+// this file in index.html) and reused here as-is.
 
 // --- Chapter 2 map layout ---------------------------------------------
 // "Old Town" map for the "Build the Town" mini-game. A grass field is cut
@@ -77,19 +76,19 @@ const CHAPTER2_PLOT_DATA = [
     id: 'market', name: 'Market', color: 0xc24a38,
     col: 26, row: 8,
     clue: 'This spot sits right along the road leading into town.',
-    info: 'The market was placed close to the road, so goods could easily be brought in and traded.'
+    info: 'A market close to the road lets goods be brought in and traded easily.'
   },
   {
     id: 'municipal', name: 'Municipal Building', color: 0x9c3b2e,
     col: 20, row: 13,
     clue: 'This spot sits near the very center of the community.',
-    info: 'The municipal building stood near the center of town, in 1700, once Pateros was declared a municipality.'
+    info: 'Once Pateros became a municipality of its own in 1799, it needed a hall to govern from. Near the center, it serves everyone.'
   },
   {
     id: 'community', name: 'Community Area', color: 0x3c7a3e,
     col: 27, row: 18,
     clue: 'This open spot near the center is where neighbors gather.',
-    info: 'A shared community area gave residents a place to gather for events, worship, and everyday life.'
+    info: 'A shared community area gives residents a place to gather for events, worship, and everyday life.'
   },
   {
     id: 'houses', name: 'Houses', color: 0x8a5a3a,
@@ -128,7 +127,7 @@ const CHAPTER2_COUNCIL = [
       { key: 'unwise', label: 'Allow it and let the road get blocked' }
     ],
     correct: 'wise',
-    explanation: 'The market sat near the road precisely so trade had a proper place — letting stalls block the road serves no one for long.'
+    explanation: 'A market near the road gives trade a proper place — letting stalls block the road serves no one for long.'
   },
   {
     situation: 'Two families both believe they were promised the same plot near the plaza.',
@@ -137,7 +136,7 @@ const CHAPTER2_COUNCIL = [
       { key: 'unwise', label: 'Let whoever built first keep it, no record kept' }
     ],
     correct: 'wise',
-    explanation: 'Formal records helped a growing municipality settle disputes fairly as more families arrived.'
+    explanation: 'Formal records help a growing municipality settle disputes fairly as more families arrive.'
   }
 ];
 
@@ -205,11 +204,11 @@ class Chapter2Scene extends Phaser.Scene {
       if (!this.locked) { this.locked = true; showPauseMenu(this); }
     });
 
-// --- Don Emilio --- (real sprite sheet, same 44x78 grid convention as
+// --- Valentin Tuason --- (real sprite sheet, same 44x78 grid convention as
      // hiraya-sheet/lola-sheet - frame 0 is his down-facing idle pose).
      this.donEmilio = this.add.sprite(720, 688, 'donemilio-sheet', 0);
      // Static collision body sized to almost the whole sprite (not just the
-     // feet) so the player can't walk into/overlap Don Emilio from any side -
+     // feet) so the player can't walk into/overlap Valentin Tuason from any side -
      // top, bottom, or left/right. NOTE: Phaser's setSize(w, h, center) only
      // takes 3 params - passing a 4th offset value here used to silently do
      // nothing, and the truthy 3rd value made it auto-center the box in the
@@ -221,7 +220,7 @@ class Chapter2Scene extends Phaser.Scene {
      this.donEmilio.body.setSize(C2_FRAME_W * 0.6, C2_FRAME_H * 0.85, false);
      this.donEmilio.body.setOffset(C2_FRAME_W * 0.2, C2_FRAME_H * 0.08);
      this.physics.add.collider(this.player, this.donEmilio);
-     // Ensure Don Emilio renders below player
+     // Ensure Valentin Tuason renders below player
      this.donEmilio.setDepth(0);
     this.interactPrompt = this.add.text(this.donEmilio.x, this.donEmilio.y - 90, '', {
       fontFamily: '"Tildunk", sans-serif', fontSize: 13, color: '#fff8e7', backgroundColor: '#000000aa',
@@ -318,15 +317,15 @@ class Chapter2Scene extends Phaser.Scene {
     // --- curtain-open reveal - opening dialogue waits for it to finish ---
     this.locked = true;
     curtainOpen(this, () => {
-      showDialogue(this, 'Don Emilio', [
-        'Ah, a new face — welcome to Pateros, back when it was still finding its shape.',
-        'Pateros was no longer simply a small community. In 1700, it was declared a municipality.',
+      showDialogue(this, 'Valentin Tuason', [
+        'Ah, a new face — I am Valentin Tuason, gobernadorcillo, the town head. Welcome to Pateros, back when it was still finding its shape.',
+        'For a long time Pateros was only a barrio of Pasig, a river port called Aguho. Then, in 1799, a Spanish decree made it a town of its own.',
         'A real town needs more than a name. It needs a market, a road, a place to gather, homes for its people.',
         'Come, help me picture where each one belongs. Walk around and place them where they make sense.'
       ], () => {
         this.locked = false;
         this.mode = 'explore';
-        // Don Emilio's task has now actually been given - reveal the Task button.
+        // Valentin Tuason's task has now actually been given - reveal the Task button.
         this.taskBtnRect.setVisible(true);
         this.taskBtnTxt.setVisible(true);
       }, ['don-emilio-happy', 'don-emilio-explain', 'don-emilio-explain', 'don-emilio-point']);
@@ -347,15 +346,15 @@ class Chapter2Scene extends Phaser.Scene {
   }
 
   // Full task list for the HUD counter / objectives modal: the 5 building
-  // types, plus a 6th "Report to Don Emilio" task that only appears once
+  // types, plus a 6th "Report to Valentin Tuason" task that only appears once
   // all 5 have been placed (goes 5/5 -> 5/6, then 6/6 once you talk to him).
   getTaskList() {
     const list = this.plots.map(p => ({ name: p.name, found: p.built, info: p.info, type: 'item' }));
     if (this.plots.every(p => p.built)) {
       list.push({
-        name: 'Report to Don Emilio',
+        name: 'Report to Valentin Tuason',
         found: this.reportDone,
-        info: 'Walk back to Don Emilio and press E to show him the finished town.',
+        info: 'Walk back to Valentin Tuason and press E to show him the finished town.',
         type: 'task'
       });
     }
@@ -389,7 +388,7 @@ showObjectivesModal() {
     }).setOrigin(0.5);
     const allPlotsBuilt = this.plots.every(p => p.built);
     const subtitle = this.add.text(width / 2, top + 50,
-      allPlotsBuilt ? 'All built — now report back to Don Emilio:' : 'Figure out where each of these belongs:', {
+      allPlotsBuilt ? 'All built — now report back to Valentin Tuason:' : 'Figure out where each of these belongs:', {
       fontFamily: '"Tildunk", sans-serif', fontSize: 13, color: '#6b4a2f'
     }).setOrigin(0.5);
     const hint = this.add.text(width / 2, top + 70, 'Hover a built item to see what you learned', {
@@ -449,49 +448,11 @@ showObjectivesModal() {
     container.add([rect, txt]);
   }
 
-  // --- Journal modal: which pages are unlocked vs still locked ------------
-  // Reuses JOURNAL_CHAPTERS, defined once in Chapter1Scene.js.
-showJournalModal() {
-     const { width, height } = this.scale;
-     const pages = this.registry.get('journalPages') || [];
-     const container = this.add.container(0, 0).setDepth(10500).setScrollFactor(0);
-    const overlay = this.add.rectangle(width / 2, height / 2, width, height, 0x000000, 0.45).setInteractive().setScrollFactor(0);
-
-    const rowH = 34;
-    const panelH = 110 + JOURNAL_CHAPTERS.length * rowH;
-    const panel = this.add.rectangle(width / 2, height / 2, 440, panelH, 0xfff8e7, 1).setStrokeStyle(4, 0x9c3b2e);
-    const top = height / 2 - panelH / 2;
-
-    const title = this.add.text(width / 2, top + 28, "Lola's Journal", {
-      fontFamily: '"Tildunk", Georgia, serif', fontSize: 20, color: '#9c3b2e', fontStyle: 'bold'
-    }).setOrigin(0.5);
-
-    container.add([overlay, panel, title]);
-
-    JOURNAL_CHAPTERS.forEach((ch, i) => {
-      const unlocked = pages.includes(ch.id);
-      const y = top + 62 + i * rowH;
-      const mark = this.add.text(width / 2 - 198, y, unlocked ? '✓' : '🔒', {
-        fontFamily: '"Tildunk", sans-serif', fontSize: 15,
-        color: unlocked ? '#3c7a3e' : '#9aa0aa'
-      }).setOrigin(0, 0.5);
-      const label = this.add.text(width / 2 - 172, y, `Page ${ch.id}: ${ch.title}`, {
-        fontFamily: '"Tildunk", sans-serif', fontSize: 13,
-        color: unlocked ? '#3b2410' : '#9aa0aa',
-        wordWrap: { width: 300 }
-      }).setOrigin(0, 0.5);
-      const status = this.add.text(width / 2 + 198, y, unlocked ? 'Unlocked' : 'Locked', {
-        fontFamily: '"Tildunk", sans-serif', fontSize: 11,
-        color: unlocked ? '#3c7a3e' : '#9aa0aa'
-      }).setOrigin(1, 0.5);
-      container.add([mark, label, status]);
-    });
-
-    const { rect, txt } = createButton(this, width / 2, top + panelH - 30, 'Close', () => {
-      container.destroy();
-      this.locked = false;
-    }, { width: 140, height: 36, fontSize: 15 });
-    container.add([rect, txt]);
+  // --- Journal: opens Lolo's Journal (journalBook.js) on top of this scene.
+  // The scene is paused while the book is open; the HUD button already set
+  // this.locked = true, so hand control back when the book closes.
+  showJournalModal() {
+    openJournalBook(this, { onClose: () => { this.locked = false; } });
   }
 
   nearestInteractable() {
@@ -522,7 +483,7 @@ showJournalModal() {
     const allBuilt = this.plots.every(p => p.built);
     if (!allBuilt) {
       this.locked = true;
-      showDialogue(this, 'Don Emilio', [
+      showDialogue(this, 'Valentin Tuason', [
         `You've placed ${this.plots.filter(p => p.built).length} of 5 so far.`,
         'Keep walking the town and thinking about where each piece belongs.'
       ], () => { this.locked = false; }, ['don-emilio-explain', 'don-emilio-happy']);
@@ -533,9 +494,9 @@ showJournalModal() {
     this.returnFlag.setVisible(false);
     this.reportDone = true;
     this.updateProgress();
-    showDialogue(this, 'Don Emilio', [
+    showDialogue(this, 'Valentin Tuason', [
       'Look at that — a market by the road, a municipal hall at the center, houses spreading outward.',
-      'Remember: in 1700, Pateros was declared a municipality. This is how a real town took shape around that — piece by piece, always around its people.',
+      'Remember: in 1799, a Spanish decree made Pateros a municipality, separate from Pasig. This is how a real town took shape after that — piece by piece, always around its people.',
       'Placing the buildings was only half of it, though. Sit with me a moment — a council has decisions to make too.'
     ], () => this.startTownCouncil(), ['don-emilio-happy', 'don-emilio-explain', 'don-emilio-point']);
   }
@@ -558,7 +519,7 @@ showJournalModal() {
     this.councilScore = 0;
     this.locked = true;
     this.player.setVisible(false); // the token stands in for them on the floor
-    showDialogue(this, 'Don Emilio', [
+    showDialogue(this, 'Valentin Tuason', [
       "One more thing before we're done - a council doesn't just build, it decides.",
       "I'll lay out a situation. Two ways to answer will open up on the floor - run to the one you believe is wiser before the moment passes."
     ], () => this.buildCouncilFloor(), ['don-emilio-explain', 'don-emilio-point']);
@@ -812,8 +773,8 @@ showJournalModal() {
     this.locked = true;
     if (this.councilContainer) { this.councilContainer.destroy(); this.councilContainer = null; }
     this.player.setVisible(true);
-    showDialogue(this, 'Don Emilio', [
-      'This is what governing a young municipality actually looked like — small, practical choices, made one at a time.',
+    showDialogue(this, 'Valentin Tuason', [
+      'These situations are imagined, but they are the kind of small, practical choices a young municipality had to make, one at a time.',
       'Let\'s see what you remember.'
     ], () => this.startQuiz(), ['don-emilio-explain', 'don-emilio-point']);
   }
@@ -909,7 +870,7 @@ showJournalModal() {
       this.locked = false;
       if (this.plots.every(p => p.built)) {
         this.returnFlag.setVisible(true);
-        showToast(this, 'Talk to Don Emilio');
+        showToast(this, 'Talk to Valentin Tuason');
       }
     });
   }
@@ -921,22 +882,22 @@ showJournalModal() {
     this.quizScore = 0;
     this.quizQuestions = [
       {
-        q: 'In what year was Pateros declared a municipality?',
-        options: ['1700', '1800', '1898', '1950'],
+        q: 'Before Pateros became a municipality of its own, it was a barrio of which town?',
+        options: ['Pasig', 'Manila', 'Makati', 'Marikina'],
         correct: 0,
-        explanation: 'Pateros was declared a municipality in 1700, marking its growth from a small community into a proper town.'
+        explanation: 'Pateros began as Aguho, a barrio of Pasig. A Spanish decree in 1799 made it a separate municipality (older sources give 1700 or 1770).'
       },
       {
-        q: 'Where should a municipal building be placed in a growing town?',
-        options: ['Near the center of the community', 'Beside the river embarcadero', 'Only next to the market', 'Far outside the town, away from residents'],
+        q: 'According to most current sources, in what year did a Spanish decree make Pateros an independent municipality?',
+        options: ['1799', '1815', '1898', '1950'],
         correct: 0,
-        explanation: 'The municipal building was placed near the center of town so it could serve the whole community around it.'
+        explanation: 'A decree of the Spanish Governor-General in 1799 separated Pateros from Pasig. Its own parish, San Roque, came later, in 1815. (Older sources give 1700 or 1770.)'
       },
       {
-        q: 'Why was the market placed near the road?',
-        options: ['So goods could be brought in and traded easily', 'To keep it separate from the municipal building', 'Because the embarcadero could no longer be used', 'It had no particular reason'],
+        q: 'Who was Valentin Tuason?',
+        options: ['The gobernadorcillo, or town head, when the first town fiesta was held in 1828', 'The commander of the Katipunan chapter in Pateros', 'The Spanish Governor-General who created the town', 'A balut maker from the duck farms'],
         correct: 0,
-        explanation: 'Markets sat close to the road so goods could move in and out easily for trade.'
+        explanation: 'Valentin Tuason was gobernadorcillo of Pateros when the first town fiesta was held, on August 16, 1828.'
       }
     ];
     this.showQuizQuestion();
@@ -1042,16 +1003,18 @@ showQuizQuestion() {
     const pages = this.registry.get('journalPages') || [];
     if (!pages.includes(2)) pages.push(2);
     this.registry.set('journalPages', pages);
+    // Persist the page too, so it is still readable after a reload.
+    ChapterProgress.addJournalPage(2);
     // Persist to localStorage so Chapter 3 shows up unlocked in the main
     // menu's Chapter list even after a page reload.
     ChapterProgress.unlockNextAfter('Chapter2');
 
-    // A short wrap-up from Don Emilio before the reward panel, so the
+    // A short wrap-up from Valentin Tuason before the reward panel, so the
     // chapter closes out like the rest of the conversation instead of
     // cutting straight to a modal the instant the quiz ends.
     this.locked = true;
-    showDialogue(this, 'Don Emilio', [
-      'You have a good eye for how a town comes together — and I think 1700 will stick with you now.',
+    showDialogue(this, 'Valentin Tuason', [
+      'You have a good eye for how a town comes together — and I think 1799 will stick with you now.',
       'Keep this page safe. The next one is not as calm as this.'
     ], () => this.showJournalReward(), ['don-emilio-happy', 'don-emilio-point']);
   }
@@ -1080,10 +1043,13 @@ const { width, height } = this.scale;
 
     container.add([overlay, panel, title, scoreTxt, flavor]);
 
-    const { rect, txt } = createButton(this, width / 2, height / 2 + 88, chapter3Ready ? 'Continue' : 'Back to Menu', () => {
+    const { rect, txt } = createButton(this, width / 2 + 95, height / 2 + 88, chapter3Ready ? 'Continue' : 'Back to Menu', () => {
       curtainClose(this, () => this.scene.start(chapter3Ready ? 'Chapter3' : 'Menu'));
-    }, { width: 190, height: 44, fontSize: 17, color: 0x3c7a3e, hoverColor: 0x4c9a4e });
+    }, { width: 170, height: 44, fontSize: 17, color: 0x3c7a3e, hoverColor: 0x4c9a4e });
     container.add([rect, txt]);
+
+    // Lets the player read the page they just collected before moving on.
+    JournalBook.addReadButton(this, container, 2, width / 2 - 95, height / 2 + 88, { width: 170, height: 44, fontSize: 16 });
   }
 
   update(time, delta) {

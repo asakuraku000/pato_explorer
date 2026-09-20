@@ -1,9 +1,8 @@
 const C3_FRAME_W = 44;
 const C3_FRAME_H = 78;
 
-// NOTE: INTERACT_RADIUS and JOURNAL_CHAPTERS are declared once in
-// Chapter1Scene.js (loaded before this file in index.html) and reused here
-// as-is - see that file for the shared journal table of contents.
+// NOTE: INTERACT_RADIUS is declared once in Chapter1Scene.js (loaded before
+// this file in index.html) and reused here as-is.
 
 // ---------------------------------------------------------------------------
 // MAP DATA - exported straight from the map editor (editor.html -> "Export
@@ -107,7 +106,7 @@ const CHAPTER3_MAP_DATA = {
       "h": 46,
       "color": "#9c3b2e",
       "collidable": false,
-      "info": "Pateros residents were among those who became involved in the revolutionary movement."
+      "info": "Pateros had its own Katipunan chapter, the Sangguniang Balangay Magtanggol, founded in April 1896."
     },
     {
       "key": "letter",
@@ -120,7 +119,7 @@ const CHAPTER3_MAP_DATA = {
       "h": 46,
       "color": "#6b4a2f",
       "collidable": false,
-      "info": "The Philippine Revolution affected communities throughout the region."
+      "info": "On August 22, 1896, the Pateros Katipunan received the first warning of the coming uprising from Bonifacio's council."
     },
     {
       "key": "armband",
@@ -133,7 +132,7 @@ const CHAPTER3_MAP_DATA = {
       "h": 46,
       "color": "#3b2410",
       "collidable": false,
-      "info": "Many Katipuneros organized and met in secret, away from the eyes of the Spanish authorities."
+      "info": "Katipuneros took secret names called sagisag. Macario Almeda of Pateros used the name Kidlat."
     },
     {
       "key": "supplies",
@@ -146,7 +145,7 @@ const CHAPTER3_MAP_DATA = {
       "h": 46,
       "color": "#5a4a30",
       "collidable": false,
-      "info": "Ordinary residents sometimes hid supplies and provisions for those who joined the movement."
+      "info": "In the last days of August 1896, foundries in Pateros hurried to forge talibong, long blades, for the uprising."
     },
     {
       "key": "marker",
@@ -159,7 +158,7 @@ const CHAPTER3_MAP_DATA = {
       "h": 46,
       "color": "#4a3624",
       "collidable": false,
-      "info": "News between revolutionaries had to travel quietly, at great risk to whoever carried it."
+      "info": "The Pateros chapter was organized in secret at a house in Barrio Santo Rosario."
     }
   ]
 };
@@ -312,7 +311,7 @@ const CHAPTER3_PATROL_CATCH_RADIUS = 30; // how close to a message counts as "pi
 const CHAPTER3_PATROL_MESSAGES = [
   { emoji: '📜', label: 'a meeting place and time', note: 'Meeting details had to stay hidden — if the authorities learned them, it could mean capture.' },
   { emoji: '📜', label: 'a list of fellow members', note: 'Names of members were some of the most dangerous information to let slip.' },
-  { emoji: '✉️', label: 'a coded supply request', note: 'Even ordinary requests were coded once they touched the movement.' },
+  { emoji: '✉️', label: 'a coded supply request', note: 'A request for supplies could give the whole movement away if the wrong person read it.' },
   { emoji: '✉️', label: 'a warning for a safehouse', note: 'Warnings had to reach the right hands quickly, and quietly.' }
 ];
 
@@ -436,12 +435,12 @@ class Chapter3Scene extends Phaser.Scene {
       if (!this.locked) { this.locked = true; showPauseMenu(this); }
     });
 
-// --- Kapitan Andres --- (real sprite sheet, same 44x78 grid convention
+// --- Macario Almeda --- (real sprite sheet, same 44x78 grid convention
      // as hiraya-sheet/lola-sheet/donemilio-sheet - frame 0 is his
      // down-facing idle pose).
      this.kapitanAndres = this.add.sprite(startX, startY - 64, 'kapitanandres-sheet', 0);
      // Static collision body sized to almost the whole sprite (not just the
-     // feet) so the player can't walk into/overlap Kapitan Andres from any
+     // feet) so the player can't walk into/overlap Macario Almeda from any
      // side - top, bottom, or left/right. NOTE: Phaser's setSize(w, h, center)
      // only takes 3 params - passing a 4th offset value here used to silently
      // do nothing, and the truthy 3rd value made it auto-center the box in
@@ -453,7 +452,7 @@ class Chapter3Scene extends Phaser.Scene {
      this.kapitanAndres.body.setSize(C3_FRAME_W * 0.6, C3_FRAME_H * 0.85, false);
      this.kapitanAndres.body.setOffset(C3_FRAME_W * 0.2, C3_FRAME_H * 0.08);
      this.physics.add.collider(this.player, this.kapitanAndres);
-     // Ensure Kapitan Andres renders below player
+     // Ensure Macario Almeda renders below player
      this.kapitanAndres.setDepth(0);
     this.interactPrompt = this.add.text(this.kapitanAndres.x, this.kapitanAndres.y - 90, '', {
       fontFamily: '"Tildunk", sans-serif', fontSize: 13, color: '#fff8e7', backgroundColor: '#000000aa',
@@ -525,7 +524,7 @@ class Chapter3Scene extends Phaser.Scene {
     this.physics.add.collider(this.player, this.decorObstacles);
 
     // 6th task - not a findable object, just walking back to report to
-    // Kapitan Andres once all 5 above are found. See getTaskList().
+    // Macario Almeda once all 5 above are found. See getTaskList().
     this.reportDone = false;
 
     // --- HUD --- (scrollFactor 0 so it stays pinned to the screen instead
@@ -576,15 +575,15 @@ class Chapter3Scene extends Phaser.Scene {
     // --- curtain-open reveal - opening dialogue waits for it to finish ---
     this.locked = true;
     curtainOpen(this, () => {
-      showDialogue(this, 'Kapitan Andres', [
-        'You\'ve come far, anak. This ground remembers things heavier than market days and plazas.',
-        'I am called Kapitan Andres — I fought, as many from Pateros did, when the call for revolution came.',
-        'Our people did not just watch history happen. They hid messages, carried word in secret, risked everything.',
+      showDialogue(this, 'Macario Almeda', [
+        'You\'ve come far, kapatid. This ground remembers things heavier than market days and plazas.',
+        'I am Macario Almeda — Kabesang Cario to my neighbors. In April 1896 we founded the Katipunan chapter of Pateros, the Sangguniang Balangay Magtanggol.',
+        'Our people did not just watch history happen. By August, it is said, about 1,200 of us had joined. We hid messages, carried word in secret, risked everything.',
         'Some of those traces are still scattered around here. Find them — and you\'ll understand what our people faced.'
       ], () => {
         this.locked = false;
         this.mode = 'explore';
-        // Kapitan Andres's task has now actually been given - reveal the Task button.
+        // Macario Almeda's task has now actually been given - reveal the Task button.
         this.taskBtnRect.setVisible(true);
         this.taskBtnTxt.setVisible(true);
       }, ['kapitan-andres-firm', 'kapitan-andres-happy', 'kapitan-andres-happy', 'kapitan-andres-point']);
@@ -621,15 +620,15 @@ class Chapter3Scene extends Phaser.Scene {
   }
 
   // Full task list for the HUD counter / objectives modal: the 5 hidden
-  // objects, plus a 6th "Report to Kapitan Andres" task that only appears
+  // objects, plus a 6th "Report to Macario Almeda" task that only appears
   // once all 5 have been found (goes 5/5 -> 5/6, then 6/6 once you talk to him).
   getTaskList() {
     const list = this.objects.map(o => ({ name: o.name, found: o.found, info: o.info, iconKey: getObjectIconKey(this, o), type: 'item' }));
     if (this.objects.every(o => o.found)) {
       list.push({
-        name: 'Report to Kapitan Andres',
+        name: 'Report to Macario Almeda',
         found: this.reportDone,
-        info: 'Walk back to Kapitan Andres and press E to tell him what you found.',
+        info: 'Walk back to Macario Almeda and press E to tell him what you found.',
         type: 'task'
       });
     }
@@ -663,7 +662,7 @@ showObjectivesModal() {
     }).setOrigin(0.5);
     const allObjectsFound = this.objects.every(o => o.found);
     const subtitle = this.add.text(width / 2, top + 50,
-      allObjectsFound ? 'All found — now report back to Kapitan Andres:' : 'Search the grounds for what was left behind:', {
+      allObjectsFound ? 'All found — now report back to Macario Almeda:' : 'Search the grounds for what was left behind:', {
       fontFamily: '"Tildunk", sans-serif', fontSize: 13, color: '#6b4a2f'
     }).setOrigin(0.5);
     const hint = this.add.text(width / 2, top + 70, 'Hover a found item to see what you learned', {
@@ -724,49 +723,11 @@ showObjectivesModal() {
     container.add([rect, txt]);
   }
 
-  // --- Journal modal: which pages are unlocked vs still locked ------------
-  // Reuses JOURNAL_CHAPTERS, defined once in Chapter1Scene.js.
-showJournalModal() {
-     const { width, height } = this.scale;
-     const pages = this.registry.get('journalPages') || [];
-     const container = this.add.container(0, 0).setDepth(10500).setScrollFactor(0);
-    const overlay = this.add.rectangle(width / 2, height / 2, width, height, 0x000000, 0.45).setInteractive().setScrollFactor(0);
-
-    const rowH = 34;
-    const panelH = 110 + JOURNAL_CHAPTERS.length * rowH;
-    const panel = this.add.rectangle(width / 2, height / 2, 440, panelH, 0xfff8e7, 1).setStrokeStyle(4, 0x9c3b2e);
-    const top = height / 2 - panelH / 2;
-
-    const title = this.add.text(width / 2, top + 28, "Lola's Journal", {
-      fontFamily: '"Tildunk", Georgia, serif', fontSize: 20, color: '#9c3b2e', fontStyle: 'bold'
-    }).setOrigin(0.5);
-
-    container.add([overlay, panel, title]);
-
-    JOURNAL_CHAPTERS.forEach((ch, i) => {
-      const unlocked = pages.includes(ch.id);
-      const y = top + 62 + i * rowH;
-      const mark = this.add.text(width / 2 - 198, y, unlocked ? '✓' : '🔒', {
-        fontFamily: '"Tildunk", sans-serif', fontSize: 15,
-        color: unlocked ? '#3c7a3e' : '#9aa0aa'
-      }).setOrigin(0, 0.5);
-      const label = this.add.text(width / 2 - 172, y, `Page ${ch.id}: ${ch.title}`, {
-        fontFamily: '"Tildunk", sans-serif', fontSize: 13,
-        color: unlocked ? '#3b2410' : '#9aa0aa',
-        wordWrap: { width: 300 }
-      }).setOrigin(0, 0.5);
-      const status = this.add.text(width / 2 + 198, y, unlocked ? 'Unlocked' : 'Locked', {
-        fontFamily: '"Tildunk", sans-serif', fontSize: 11,
-        color: unlocked ? '#3c7a3e' : '#9aa0aa'
-      }).setOrigin(1, 0.5);
-      container.add([mark, label, status]);
-    });
-
-    const { rect, txt } = createButton(this, width / 2, top + panelH - 30, 'Close', () => {
-      container.destroy();
-      this.locked = false;
-    }, { width: 140, height: 36, fontSize: 15 });
-    container.add([rect, txt]);
+  // --- Journal: opens Lolo's Journal (journalBook.js) on top of this scene.
+  // The scene is paused while the book is open; the HUD button already set
+  // this.locked = true, so hand control back when the book closes.
+  showJournalModal() {
+    openJournalBook(this, { onClose: () => { this.locked = false; } });
   }
 
   nearestInteractable() {
@@ -789,7 +750,7 @@ showJournalModal() {
     const allFound = this.objects.every(o => o.found);
     if (!allFound) {
       this.locked = true;
-      showDialogue(this, 'Kapitan Andres', [
+      showDialogue(this, 'Macario Almeda', [
         `You've found ${this.objects.filter(o => o.found).length} of 5 so far.`,
         'Keep searching the grounds — there is more to uncover.'
       ], () => { this.locked = false; }, ['kapitan-andres-firm', 'kapitan-andres-point']);
@@ -800,7 +761,7 @@ showJournalModal() {
     this.returnFlag.setVisible(false);
     this.reportDone = true;
     this.updateProgress();
-    showDialogue(this, 'Kapitan Andres', [
+    showDialogue(this, 'Macario Almeda', [
       'You found every message — the flag, the coded letters, the armband, the hidden supplies, the secret marker.',
       'We worked in secret because discovery meant capture, or worse — that is why everything had to stay hidden.',
       'Before you go — a patrol is making its rounds near the safehouse right now. Help me get a few more messages past them.'
@@ -825,7 +786,7 @@ showJournalModal() {
   }
 
   showPatrolIntro() {
-    showDialogue(this, 'Kapitan Andres', [
+    showDialogue(this, 'Macario Almeda', [
       'Stay low and keep moving. WASD or the arrows — the lantern light is their notice, not a wall, so timing gets you past it.',
       `Get all ${CHAPTER3_PATROL_MESSAGES.length} messages across. Get spotted three times and we'll have to fall back.`
     ], () => {
@@ -1070,7 +1031,7 @@ showJournalModal() {
   showPatrolRecap() {
     const tally = `${this.patrolCollected}/${CHAPTER3_PATROL_MESSAGES.length}`;
     this.locked = true;
-    showDialogue(this, 'Kapitan Andres', [
+    showDialogue(this, 'Macario Almeda', [
       `Every message made it through — ${tally}, and not one of you spotted for long.`,
       'That fear never really left us — every message carried that risk, every single time.',
       'Now you understand what our people faced. Let\'s see what you remember.'
@@ -1084,7 +1045,7 @@ showJournalModal() {
   showPatrolFailRetry() {
     const tally = `${this.patrolCollected}/${CHAPTER3_PATROL_MESSAGES.length}`;
     this.locked = true;
-    showDialogue(this, 'Kapitan Andres', [
+    showDialogue(this, 'Macario Almeda', [
       `That patrol nearly had you — you got ${tally} through before they closed in.`,
       'Catch your breath. Let\'s try that crossing again.'
     ], () => this.retryPatrol(), ['kapitan-andres-firm', 'kapitan-andres-point']);
@@ -1118,7 +1079,7 @@ showJournalModal() {
       this.locked = false;
       if (this.objects.every(x => x.found)) {
         this.returnFlag.setVisible(true);
-        showToast(this, 'Talk to Kapitan Andres');
+        showToast(this, 'Talk to Macario Almeda');
       }
     });
   }
@@ -1130,16 +1091,16 @@ showJournalModal() {
     this.quizScore = 0;
     this.quizQuestions = [
       {
-        q: 'Who is Kapitan Andres meant to represent?',
-        options: ['A Katipunero from the revolution', 'A Spanish colonial official', 'A magbabalut from the duck farms', 'A member of the town council'],
+        q: 'Who was Macario Almeda?',
+        options: ['The commander of the Katipunan chapter in Pateros', 'A Spanish colonial official', 'A magbabalut from the duck farms', 'The parish priest of Pateros'],
         correct: 0,
-        explanation: 'Kapitan Andres is a fictionalized Katipunero character inspired by the experiences of Pateros residents during the Philippine Revolution.'
+        explanation: 'Macario Almeda, a 29-year-old farmer and village head, was elected commander of the Pateros Katipunan chapter in April 1896. His secret name was Kidlat.'
       },
       {
-        q: 'What movement did many Pateros residents become involved in?',
-        options: ['The Philippine Revolution', 'The building of the market', 'The 1700 municipal founding', 'A trade agreement'],
+        q: 'What was the Katipunan chapter in Pateros called?',
+        options: ['Sangguniang Balangay Magtanggol', 'Sangguniang Balangay Kidlat', 'Balangay ng Pateros Pato', 'Kapisanan ng Ilog Pasig'],
         correct: 0,
-        explanation: 'Pateros residents were among those who became involved in the revolutionary movement.'
+        explanation: 'The Pateros chapter, the Sangguniang Balangay Magtanggol, was founded in April 1896 at a house in Barrio Santo Rosario.'
       },
       {
         q: 'Why did revolutionaries often hide messages and meet in secret?',
@@ -1251,15 +1212,17 @@ showQuizQuestion() {
     const pages = this.registry.get('journalPages') || [];
     if (!pages.includes(3)) pages.push(3);
     this.registry.set('journalPages', pages);
+    // Persist the page too, so it is still readable after a reload.
+    ChapterProgress.addJournalPage(3);
     // Persist to localStorage so Chapter 4 shows up unlocked in the main
     // menu's Chapter list even after a page reload.
     ChapterProgress.unlockNextAfter('Chapter3');
 
-    // A short wrap-up from Kapitan Andres before the reward panel, so the
+    // A short wrap-up from Macario Almeda before the reward panel, so the
     // chapter closes out like the rest of the conversation instead of
     // cutting straight to a modal the instant the quiz ends.
     this.locked = true;
-    showDialogue(this, 'Kapitan Andres', [
+    showDialogue(this, 'Macario Almeda', [
       'You carry that page the way you should carry the memory — quietly, but never forgotten.',
       'There is a lighter story waiting for you next, I promise.'
     ], () => this.showJournalReward(), ['kapitan-andres-firm', 'kapitan-andres-happy']);
@@ -1289,10 +1252,13 @@ const { width, height } = this.scale;
 
     container.add([overlay, panel, title, scoreTxt, flavor]);
 
-    const { rect, txt } = createButton(this, width / 2, height / 2 + 88, chapter4Ready ? 'Continue' : 'Back to Menu', () => {
+    const { rect, txt } = createButton(this, width / 2 + 95, height / 2 + 88, chapter4Ready ? 'Continue' : 'Back to Menu', () => {
       curtainClose(this, () => this.scene.start(chapter4Ready ? 'Chapter4' : 'Menu'));
-    }, { width: 190, height: 44, fontSize: 17, color: 0x3c7a3e, hoverColor: 0x4c9a4e });
+    }, { width: 170, height: 44, fontSize: 17, color: 0x3c7a3e, hoverColor: 0x4c9a4e });
     container.add([rect, txt]);
+
+    // Lets the player read the page they just collected before moving on.
+    JournalBook.addReadButton(this, container, 3, width / 2 - 95, height / 2 + 88, { width: 170, height: 44, fontSize: 16 });
   }
 
   update(time, delta) {

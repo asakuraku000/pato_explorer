@@ -75,7 +75,10 @@ class AboutScene extends Phaser.Scene {
         'Piece together a journal, one chapter at a time, and discover the ' +
         'river, the town, and the traditions that shaped Pateros - built as a ' +
         'college capstone project, with content drawn from local elders and ' +
-        'municipal records.',
+        'municipal records.\n\n' +
+        'Macario Almeda and Valentin Tuason were real people of Pateros. ' +
+        'Their scenes are dramatized: the lines are written for the game ' +
+        'and keep to what the historical record says.',
         bodyStyle
       ).setOrigin(0.5, 0);
       this.contentContainer.add(body);

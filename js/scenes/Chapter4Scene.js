@@ -1,9 +1,8 @@
 const C4_FRAME_W = 44;
 const C4_FRAME_H = 78;
 
-// NOTE: INTERACT_RADIUS and JOURNAL_CHAPTERS are declared once in
-// Chapter1Scene.js (loaded before this file in index.html) and reused here
-// as-is - see that file for the shared journal table of contents.
+// NOTE: INTERACT_RADIUS is declared once in Chapter1Scene.js (loaded before
+// this file in index.html) and reused here as-is.
 
 // ============================================================================
 // Chapter 4 - "The Balut Capital"
@@ -11,7 +10,7 @@ const C4_FRAME_H = 78;
 // Per the story doc this chapter is meant to be the most fun one, built from
 // THREE small back-to-back mini-games rather than one exploration loop:
 //   1. Duck Herding  - guide free-roaming ducks into a pen
-//   2. Egg Sorting   - sort eggs into "For Incubation" vs "Not Ready"
+//   2. Egg Sorting   - sort eggs into "Keep Incubating" vs "Set Aside"
 //   3. Balut Stall   - match customer requests to the right item
 // The duck-yard/egg/stall mini-game props here are still PLACEHOLDERS -
 // flat-color rectangles / emoji-as-sprite, the same approach already used
@@ -126,24 +125,24 @@ const CHAPTER4_DUCK_MOVE_THRESHOLD = 4;
 // Facts drawn straight from the story doc's Chapter 4 section.
 const CHAPTER4_EGGS = [
   {
-    desc: 'Egg A - placed in the incubator 9 days ago. Warm, and clearly developing.',
+    desc: 'Egg A - 11 days into incubation. Held to the candling lamp, it shows a dark spot with spider-like veins.',
     correct: 'incubation',
-    explanation: 'Balut production involves incubating duck eggs before they are cooked.'
+    explanation: 'That web of veins means the egg is fertile and developing, so it stays in the incubator.'
   },
   {
-    desc: 'Egg B - laid just this morning, fresh from the pen.',
+    desc: 'Egg B - 11 days into incubation. Held to the candling lamp, it looks clear, like a plain yolk.',
     correct: 'not_ready',
-    explanation: 'A freshly laid egg is set aside first - it hasn\'t started incubating yet.'
+    explanation: 'A clear egg is infertile. It will not become balut, so it is taken out and sold as penoy.'
   },
   {
-    desc: 'Egg C - 16 days in the incubator, close to the balut stage.',
+    desc: 'Egg C - 16 days in the incubator, close to the 18-day balut stage.',
     correct: 'incubation',
-    explanation: 'Eggs further along in incubation are the ones getting close to becoming balut.'
+    explanation: 'A classic balut is incubated about 18 days, so this egg keeps incubating.'
   },
   {
     desc: 'Egg D - the shell is cracked and spoiled.',
     correct: 'not_ready',
-    explanation: 'A damaged egg is set aside - it won\'t be used for incubation at all.'
+    explanation: 'Makers tap eggs to catch cracked or thin shells. A damaged egg cannot survive incubation, so it is set aside.'
   }
 ];
 
@@ -337,49 +336,11 @@ class Chapter4Scene extends Phaser.Scene {
     }
   }
 
-  // --- Journal modal: which pages are unlocked vs still locked ------------
-  // Reuses JOURNAL_CHAPTERS, defined once in Chapter1Scene.js.
-showJournalModal() {
-     const { width, height } = this.scale;
-     const pages = this.registry.get('journalPages') || [];
-     const container = this.add.container(0, 0).setDepth(10500).setScrollFactor(0);
-    const overlay = this.add.rectangle(width / 2, height / 2, width, height, 0x000000, 0.45).setInteractive().setScrollFactor(0);
-
-    const rowH = 34;
-    const panelH = 110 + JOURNAL_CHAPTERS.length * rowH;
-    const panel = this.add.rectangle(width / 2, height / 2, 440, panelH, 0xfff8e7, 1).setStrokeStyle(4, 0x9c3b2e);
-    const top = height / 2 - panelH / 2;
-
-    const title = this.add.text(width / 2, top + 28, "Lola's Journal", {
-      fontFamily: '"Tildunk", Georgia, serif', fontSize: 20, color: '#9c3b2e', fontStyle: 'bold'
-    }).setOrigin(0.5);
-
-    container.add([overlay, panel, title]);
-
-    JOURNAL_CHAPTERS.forEach((ch, i) => {
-      const unlocked = pages.includes(ch.id);
-      const y = top + 62 + i * rowH;
-      const mark = this.add.text(width / 2 - 198, y, unlocked ? '✓' : '🔒', {
-        fontFamily: '"Tildunk", sans-serif', fontSize: 15,
-        color: unlocked ? '#3c7a3e' : '#9aa0aa'
-      }).setOrigin(0, 0.5);
-      const label = this.add.text(width / 2 - 172, y, `Page ${ch.id}: ${ch.title}`, {
-        fontFamily: '"Tildunk", sans-serif', fontSize: 13,
-        color: unlocked ? '#3b2410' : '#9aa0aa',
-        wordWrap: { width: 300 }
-      }).setOrigin(0, 0.5);
-      const status = this.add.text(width / 2 + 198, y, unlocked ? 'Unlocked' : 'Locked', {
-        fontFamily: '"Tildunk", sans-serif', fontSize: 11,
-        color: unlocked ? '#3c7a3e' : '#9aa0aa'
-      }).setOrigin(1, 0.5);
-      container.add([mark, label, status]);
-    });
-
-    const { rect, txt } = createButton(this, width / 2, top + panelH - 30, 'Close', () => {
-      container.destroy();
-      this.locked = false;
-    }, { width: 140, height: 36, fontSize: 15 });
-    container.add([rect, txt]);
+  // --- Journal: opens Lolo's Journal (journalBook.js) on top of this scene.
+  // The scene is paused while the book is open; the HUD button already set
+  // this.locked = true, so hand control back when the book closes.
+  showJournalModal() {
+    openJournalBook(this, { onClose: () => { this.locked = false; } });
   }
 
   // ==========================================================================
@@ -583,7 +544,7 @@ showJournalModal() {
     }).setOrigin(0.5);
     cursor += 26;
 
-    const subtitle = this.add.text(width / 2, cursor, 'Sort each egg - ready for incubation, or not yet?', {
+    const subtitle = this.add.text(width / 2, cursor, 'Sort each egg - keep incubating it, or set it aside?', {
       fontFamily: '"Tildunk", sans-serif', fontSize: 12, color: '#6b4a2f'
     }).setOrigin(0.5);
     cursor += 32;
@@ -602,8 +563,8 @@ showJournalModal() {
     container.add([overlay, panel, title, subtitle, eggIcon, descTxt]);
 
     const options = [
-      { key: 'incubation', label: 'For Incubation' },
-      { key: 'not_ready', label: 'Not Ready Yet' }
+      { key: 'incubation', label: 'Keep Incubating' },
+      { key: 'not_ready', label: 'Set Aside' }
     ];
     const optionGap = 46;
     const optionsStartY = cursor;
@@ -754,7 +715,7 @@ showJournalModal() {
   finishBalutStall() {
     showDialogue(this, 'Mang Carding', [
       'Pateros became famous for balut - back in the 1950s, historical accounts say this town had around 400,000 ducks.',
-      "But as the years went on, the streets got busier, and there wasn't as much room left for that many ducks.",
+      "But by the 1970s, growing crowds and a polluted river made it hard to keep that many ducks.",
       "Still, some of us keep the tradition going. Now - let's see what you remember."
     ], () => this.startQuiz(), ['mang-carding-explain', 'mang-carding-happy', 'mang-carding-wink']);
   }
@@ -782,7 +743,7 @@ showJournalModal() {
         q: 'About how many ducks did historical accounts estimate Pateros had during the 1950s?',
         options: ['Around 400,000', 'About 40,000', 'Around 150,000', 'Nearly 1 million'],
         correct: 0,
-        explanation: 'Historical accounts estimate Pateros had around 400,000 ducks during the 1950s, before urbanization changed the town.'
+        explanation: 'Historical accounts estimate Pateros had around 400,000 ducks during the 1950s, before urbanization and a polluted river drove the ducks away in the 1970s.'
       }
     ];
     this.showQuizQuestion();
@@ -917,6 +878,8 @@ showQuizQuestion() {
     const pages = this.registry.get('journalPages') || [];
     if (!pages.includes(4)) pages.push(4);
     this.registry.set('journalPages', pages);
+    // Persist the page too, so it is still readable after a reload.
+    ChapterProgress.addJournalPage(4);
     // Persist to localStorage so Chapter 5 shows up unlocked in the main
     // menu's Chapter list even after a page reload.
     ChapterProgress.unlockNextAfter('Chapter4');
@@ -955,10 +918,13 @@ const { width, height } = this.scale;
 
     container.add([overlay, panel, title, scoreTxt, flavor]);
 
-    const { rect, txt } = createButton(this, width / 2, height / 2 + 88, chapter5Ready ? 'Continue' : 'Back to Menu', () => {
+    const { rect, txt } = createButton(this, width / 2 + 95, height / 2 + 88, chapter5Ready ? 'Continue' : 'Back to Menu', () => {
       curtainClose(this, () => this.scene.start(chapter5Ready ? 'Chapter5' : 'Menu'));
-    }, { width: 190, height: 44, fontSize: 17, color: 0x3c7a3e, hoverColor: 0x4c9a4e });
+    }, { width: 170, height: 44, fontSize: 17, color: 0x3c7a3e, hoverColor: 0x4c9a4e });
     container.add([rect, txt]);
+
+    // Lets the player read the page they just collected before moving on.
+    JournalBook.addReadButton(this, container, 4, width / 2 - 95, height / 2 + 88, { width: 170, height: 44, fontSize: 16 });
   }
 
   update(time) {

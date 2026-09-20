@@ -35,13 +35,21 @@ class MenuScene extends Phaser.Scene {
     const startBtn = createWoodButton(this, cx, 300, 'Start Adventure', () => {
       startBtn.image.disableInteractive();
       chapterBtn.image.disableInteractive();
+      journalBtn.image.disableInteractive();
       this.registry.set('selectedCharacter', 'hiraya');
       curtainClose(this, () => this.scene.start('Prologue'));
     }, { width: 340, height: 100, fontSize: 30 });
 
-    const chapterBtn = createWoodButton(this, cx, 406, 'Chapters', () => {
+    // Chapters and Journal share the row under Start (together about as wide as Start).
+    const chapterBtn = createWoodButton(this, cx - 86, 406, 'Chapters', () => {
       this.showChapterSelect();
-    }, { width: 280, height: 78, fontSize: 24 });
+    }, { width: 168, height: 70, fontSize: 22 });
+
+    // Opens Lolo's Journal (journalBook.js). Pages the player has collected are
+    // readable; the rest show as sealed. The Menu is paused while it is open.
+    const journalBtn = createWoodButton(this, cx + 86, 406, 'Journal', () => {
+      openJournalBook(this);
+    }, { width: 168, height: 70, fontSize: 22 });
 
     // --- Secondary actions: round Wooden-Gold icon buttons (Settings / Sound / About) ---
     const iconY = 486;

@@ -1,9 +1,8 @@
 const C5_FRAME_W = 44;
 const C5_FRAME_H = 78;
 
-// NOTE: INTERACT_RADIUS and JOURNAL_CHAPTERS are declared once in
-// Chapter1Scene.js (loaded before this file in index.html) and reused here
-// as-is - see that file for the shared journal table of contents.
+// NOTE: INTERACT_RADIUS is declared once in Chapter1Scene.js (loaded before
+// this file in index.html) and reused here as-is.
 
 // ============================================================================
 // Chapter 5 - "A Living Heritage"
@@ -2621,12 +2620,12 @@ const CHAPTER5_TRADITIONS = [
   {
     key: 'alfombra',
     name: 'Alfombra',
-    desc: 'Traditional slipper-making associated with Pateros.'
+    desc: 'Handmade slippers with a soft, carpet-like top, a shoemaking tradition of Pateros.'
   },
   {
     key: 'pandangguhan',
     name: 'Pandangguhan',
-    desc: 'A cultural tradition associated with Santa Marta.'
+    desc: 'A February dance parade offered to Santa Marta, with pasubo, the sharing of food.'
   },
   {
     key: 'balut',
@@ -2636,7 +2635,7 @@ const CHAPTER5_TRADITIONS = [
   {
     key: 'santamarta',
     name: 'Santa Marta',
-    desc: 'The patron saint of Pateros, honored each year with a feast and procession.'
+    desc: 'A patroness of Pateros, honored each year with a feast and processions.'
   }
 ];
 
@@ -2676,7 +2675,7 @@ const CHAPTER5_EXPLORE_SPOTS = [
   { tradKey: 'santamarta', name: 'Santa Marta Shrine', x: 1360, y: 976, w: 100, h: 100 } // Tent 3
 ];
 
-// Cameo NPCs - Lola Nena (Ch1), Don Emilio (Ch2), Kapitan Andres (Ch3), and
+// Cameo NPCs - Lola Nena (Ch1), Valentin Tuason (Ch2), Macario Almeda (Ch3), and
 // Mang Carding (Ch4) scattered around the Heritage Square plaza during the
 // explore beat, as a "you've met everyone" callback for the final chapter.
 // No quest logic attached - walking up and pressing E just gets a short
@@ -2697,17 +2696,17 @@ const CHAPTER5_CAMEO_NPCS = [
     portraits: ['lola-happy', 'lola-wink']
   },
   {
-    sheet: 'donemilio-sheet', name: 'Don Emilio', x: 1392, y: 816, flip: true,
+    sheet: 'donemilio-sheet', name: 'Valentin Tuason', x: 1392, y: 816, flip: true,
     lines: [
-      'Ah, there you are! Pateros has come a long way since it was declared a municipality in 1700.',
+      'Ah, there you are! Pateros held its first town fiesta in 1828, under my term as town head.',
       'Look around - the market, the roads, the places to gather. A town is still made of its people.'
     ],
     portraits: ['don-emilio-happy', 'don-emilio-explain']
   },
   {
-    sheet: 'kapitanandres-sheet', name: 'Kapitan Andres', x: 176, y: 912, flip: false,
+    sheet: 'kapitanandres-sheet', name: 'Macario Almeda', x: 176, y: 912, flip: false,
     lines: [
-      'Good to see you again, anak. The messages we once carried in secret are stories anyone can read now.',
+      'Good to see you again, kapatid. The Balangay Magtanggol was founded in April 1896, and its story is still told in Pateros.',
       'Remember what our people risked - and see what they made possible.'
     ],
     portraits: ['kapitan-andres-happy', 'kapitan-andres-firm']
@@ -2715,7 +2714,7 @@ const CHAPTER5_CAMEO_NPCS = [
   {
     sheet: 'mangcarding-sheet', name: 'Mang Carding', x: 1488, y: 208, flip: true,
     lines: [
-      'Ay, anak! Balut is still being made around here - the trade lives on.',
+      'Ay, anak! Balut is still sold around here, and some makers keep the trade alive.',
       'Every time someone asks how it\'s done, a little more of that story gets passed down.'
     ],
     portraits: ['mang-carding-happy', 'mang-carding-wink']
@@ -2773,7 +2772,7 @@ const CHAPTER5_ASKWELL = [
   {
     situation: 'Maya wants to know more about Pandangguhan.',
     options: [
-      { key: 'good', label: '"What does Pandangguhan mean to Santa Marta?"' },
+      { key: 'good', label: '"What does the Pandangguhan mean to those who dance it?"' },
       { key: 'poor', label: '"Isn\'t that dance just for older folks?"' }
     ],
     correct: 'good',
@@ -3315,49 +3314,11 @@ class Chapter5Scene extends Phaser.Scene {
     container.add([rect, txt]);
   }
 
-  // --- Journal modal: which pages are unlocked vs still locked ------------
-  // Reuses JOURNAL_CHAPTERS, defined once in Chapter1Scene.js.
-showJournalModal() {
-     const { width, height } = this.scale;
-     const pages = this.registry.get('journalPages') || [];
-     const container = this.add.container(0, 0).setDepth(10500).setScrollFactor(0);
-    const overlay = this.add.rectangle(width / 2, height / 2, width, height, 0x000000, 0.45).setInteractive().setScrollFactor(0);
-
-    const rowH = 34;
-    const panelH = 110 + JOURNAL_CHAPTERS.length * rowH;
-    const panel = this.add.rectangle(width / 2, height / 2, 440, panelH, 0xfff8e7, 1).setStrokeStyle(4, 0x9c3b2e);
-    const top = height / 2 - panelH / 2;
-
-    const title = this.add.text(width / 2, top + 28, "Lola's Journal", {
-      fontFamily: '"Tildunk", Georgia, serif', fontSize: 20, color: '#9c3b2e', fontStyle: 'bold'
-    }).setOrigin(0.5);
-
-    container.add([overlay, panel, title]);
-
-    JOURNAL_CHAPTERS.forEach((ch, i) => {
-      const unlocked = pages.includes(ch.id);
-      const y = top + 62 + i * rowH;
-      const mark = this.add.text(width / 2 - 198, y, unlocked ? '✓' : '🔒', {
-        fontFamily: '"Tildunk", sans-serif', fontSize: 15,
-        color: unlocked ? '#3c7a3e' : '#9aa0aa'
-      }).setOrigin(0, 0.5);
-      const label = this.add.text(width / 2 - 172, y, `Page ${ch.id}: ${ch.title}`, {
-        fontFamily: '"Tildunk", sans-serif', fontSize: 13,
-        color: unlocked ? '#3b2410' : '#9aa0aa',
-        wordWrap: { width: 300 }
-      }).setOrigin(0, 0.5);
-      const status = this.add.text(width / 2 + 198, y, unlocked ? 'Unlocked' : 'Locked', {
-        fontFamily: '"Tildunk", sans-serif', fontSize: 11,
-        color: unlocked ? '#3c7a3e' : '#9aa0aa'
-      }).setOrigin(1, 0.5);
-      container.add([mark, label, status]);
-    });
-
-    const { rect, txt } = createButton(this, width / 2, top + panelH - 30, 'Close', () => {
-      container.destroy();
-      this.locked = false;
-    }, { width: 140, height: 36, fontSize: 15 });
-    container.add([rect, txt]);
+  // --- Journal: opens Lolo's Journal (journalBook.js) on top of this scene.
+  // The scene is paused while the book is open; the HUD button already set
+  // this.locked = true, so hand control back when the book closes.
+  showJournalModal() {
+    openJournalBook(this, { onClose: () => { this.locked = false; } });
   }
 
   // ==========================================================================
@@ -4075,13 +4036,13 @@ showJournalModal() {
         q: "What craft does Alfombra-making represent in Pateros' living heritage?",
         options: ['Traditional slipper-making', 'Duck-raising', 'Weaving', 'Boat-building'],
         correct: 0,
-        explanation: 'Alfombra is tied to traditional slipper-making associated with Pateros.'
+        explanation: 'Alfombra is a slipper-making tradition of Pateros. The name is Spanish for carpet.'
       },
       {
         q: 'What is Pandangguhan a tradition associated with?',
-        options: ['Santa Marta', "Pateros' founding as a municipality", 'The Philippine Revolution', 'The balut industry'],
+        options: ['Santa Marta', "Pateros' founding as a municipality", 'The Philippine Revolution', 'Alfombra slipper-making'],
         correct: 0,
-        explanation: 'Pandangguhan is a cultural tradition associated with Santa Marta.'
+        explanation: 'The Pandangguhan is a dance parade held each February in honor of Santa Marta.'
       }
     ];
     this.showQuizQuestion();
@@ -4188,6 +4149,8 @@ showQuizQuestion() {
     const pages = this.registry.get('journalPages') || [];
     if (!pages.includes(5)) pages.push(5);
     this.registry.set('journalPages', pages);
+    // Persist the page too, so it is still readable after a reload.
+    ChapterProgress.addJournalPage(5);
     // No chapter comes after Chapter 5, but this keeps the pattern
     // consistent in case a future chapter is added to CHAPTER_ORDER.
     ChapterProgress.unlockNextAfter('Chapter5');
@@ -4221,7 +4184,7 @@ const { width, height } = this.scale;
 
     container.add([overlay, panel, title, scoreTxt, flavor]);
 
-    const { rect, txt } = createButton(this, width / 2, height / 2 + 88, 'Continue', () => {
+    const { rect, txt } = createButton(this, width / 2 + 95, height / 2 + 88, 'Continue', () => {
       // The doc's final beat happens back at the plaza, not here in the
       // Heritage Square - PrologueScene picks up the "Restore the Journal"
       // reflection + final title card when it sees this flag (see its
@@ -4229,8 +4192,11 @@ const { width, height } = this.scale;
       container.destroy();
       this.registry.set('gameEnding', true);
       curtainClose(this, () => this.scene.start('Prologue'));
-    }, { width: 190, height: 44, fontSize: 17, color: 0x3c7a3e, hoverColor: 0x4c9a4e });
+    }, { width: 170, height: 44, fontSize: 17, color: 0x3c7a3e, hoverColor: 0x4c9a4e });
     container.add([rect, txt]);
+
+    // Lets the player read the page they just collected before moving on.
+    JournalBook.addReadButton(this, container, 5, width / 2 - 95, height / 2 + 88, { width: 170, height: 44, fontSize: 16 });
   }
 
   // --------------------------------------------------------------------
